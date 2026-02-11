@@ -3,7 +3,7 @@ import { GoogleGenAI, Modality, Type } from "@google/genai";
 
 const getAI = () => {
   // Fix: Direct use of process.env.API_KEY for initializing GoogleGenAI as per guidelines
-  return new GoogleGenAI({ apiKey: process.env.AIzaSyCeh4DMCI9EvlCe3dAlFoqbTzft7SDIN3g });
+  return new GoogleGenAI({ apiKey: process.env.API_KEY });
 };
 
 // সাময়িক সার্ভার সমস্যা এড়াতে Retry Logic
