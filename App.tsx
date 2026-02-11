@@ -558,7 +558,7 @@ const App: React.FC = () => {
                      <div className="relative mb-8">
                         <div className="absolute inset-0 bg-indigo-500/20 blur-2xl rounded-full scale-110" />
                         <div className="w-48 h-48 md:w-56 md:h-56 rounded-[3.5rem] md:rounded-[4.5rem] p-1.5 bg-gradient-to-tr from-indigo-600 via-purple-500 to-indigo-400 shadow-2xl overflow-hidden relative">
-                           <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=800" 
+                           <img src="theotonius.jpg" 
                                 className="w-full h-full object-cover rounded-[3rem] md:rounded-[4rem]" 
                                 alt="Sobuj Biswas" />
                         </div>
