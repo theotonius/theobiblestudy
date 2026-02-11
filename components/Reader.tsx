@@ -50,16 +50,36 @@ const Reader: React.FC<ReaderProps> = ({ song, onBack, isFavorite, onToggleFavor
   };
 
   const handleShareSong = async () => {
-    const shareText = `Sacred Melodies - ${song.title}\n\n${song.lyrics.join('\n')}`;
+    const shareText = `🎶 Sacred Melodies 🎶\n\n📖 ${song.title} (${song.reference})\n\n${song.lyrics.join('\n')}\n\nShared via Sacred Melodies App`;
+    
     try {
       if (navigator.share) {
-        await navigator.share({ title: song.title, text: shareText });
+        const shareData: ShareData = {
+          title: song.title,
+          text: shareText,
+        };
+        
+        // Only include URL if it's a standard web URL (http/https) to avoid "Invalid URL" errors
+        // This prevents crashes in local development or sandboxed environments
+        if (window.location.protocol.startsWith('http')) {
+          shareData.url = window.location.href;
+        }
+
+        await navigator.share(shareData);
       } else {
+        throw new Error('Web Share API not available');
+      }
+    } catch (err) {
+      console.error("Share failed, falling back to clipboard:", err);
+      // Universal fallback: copy to clipboard if share fails or is not supported
+      try {
         await navigator.clipboard.writeText(shareText);
         setIsShared(true);
         setTimeout(() => setIsShared(false), 2000);
+      } catch (clipErr) {
+        console.error("Clipboard fallback failed:", clipErr);
       }
-    } catch (err) { console.error("Error sharing:", err); }
+    }
   };
 
   const stopAudio = () => {
@@ -108,19 +128,6 @@ const Reader: React.FC<ReaderProps> = ({ song, onBack, isFavorite, onToggleFavor
           <>
             <div className="absolute top-1/4 -left-20 w-80 h-80 bg-indigo-500/10 blur-[100px] animate-celestial" />
             <div className="absolute bottom-1/4 -right-20 w-96 h-96 bg-purple-500/10 blur-[120px] animate-celestial" style={{ animationDelay: '-5s' }} />
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full opacity-10" style={{ backgroundImage: 'radial-gradient(circle, #fff 1px, transparent 1px)', backgroundSize: '100px 100px' }} />
-          </>
-        )}
-        {theme === Theme.Sepia && (
-          <>
-            <div className="absolute top-0 right-0 w-full h-full bg-gradient-to-br from-amber-200/5 to-transparent animate-rays origin-top-right" />
-            <div className="absolute top-1/3 -left-10 w-40 h-screen bg-amber-400/5 blur-3xl rotate-12 animate-rays" style={{ animationDelay: '-10s' }} />
-          </>
-        )}
-        {theme === Theme.Light && (
-          <>
-            <div className="absolute top-1/4 left-1/4 w-96 h-96 border-[40px] border-indigo-500/5 rounded-full blur-2xl animate-wave" />
-            <div className="absolute bottom-1/4 right-1/4 w-80 h-80 border-[30px] border-indigo-400/5 rounded-full blur-2xl animate-wave" style={{ animationDelay: '-4s' }} />
           </>
         )}
       </div>
@@ -142,7 +149,7 @@ const Reader: React.FC<ReaderProps> = ({ song, onBack, isFavorite, onToggleFavor
             <button onClick={() => onToggleFavorite(song.id)} className={`p-3 rounded-2xl transition-all ${isFavorite ? 'text-rose-500 scale-110 bg-rose-50 dark:bg-rose-900/20' : 'opacity-40 hover:opacity-100'}`}>
               <Heart className={`w-6 h-6 ${isFavorite ? 'fill-current' : ''}`} />
             </button>
-            <button onClick={handleShareSong} className={`p-3 rounded-2xl transition-all ${theme === Theme.Dark ? 'hover:bg-slate-800' : 'hover:bg-slate-50'}`}>
+            <button onClick={handleShareSong} className={`p-3 rounded-2xl transition-all active:scale-95 ${theme === Theme.Dark ? 'hover:bg-slate-800' : 'hover:bg-slate-50'}`} title="Share lyrics">
               {isShared ? <Check className="w-6 h-6 text-emerald-500" /> : <Share2 className="w-6 h-6" />}
             </button>
             <button onClick={() => setFontSize(prev => prev >= 48 ? 16 : prev + 4)} className={`p-3 rounded-2xl transition-all ${theme === Theme.Dark ? 'hover:bg-slate-800' : 'hover:bg-slate-50'}`}>
@@ -197,7 +204,6 @@ const Reader: React.FC<ReaderProps> = ({ song, onBack, isFavorite, onToggleFavor
                 <div className="space-y-4 animate-pulse">
                   <div className={`h-4 rounded-full w-full ${theme === Theme.Dark ? 'bg-slate-700' : 'bg-indigo-50'}`}></div>
                   <div className={`h-4 rounded-full w-5/6 ${theme === Theme.Dark ? 'bg-slate-700' : 'bg-indigo-50'}`}></div>
-                  <div className={`h-4 rounded-full w-4/6 ${theme === Theme.Dark ? 'bg-slate-700' : 'bg-indigo-50'}`}></div>
                 </div>
               ) : (
                 <p className="text-xl md:text-2xl font-serif leading-relaxed italic opacity-80">{reflection}</p>

@@ -13,7 +13,6 @@ import {
 } from 'lucide-react';
 import { fetchSongFromAI, explainVerse } from './services/geminiService';
 
-// Moved NavButton component above App to satisfy "used before declaration" constraint
 const NavButton: React.FC<{ active: boolean; onClick: () => void; icon: React.ReactNode; label: string; activeTheme: Theme }> = ({ active, onClick, icon, label, activeTheme }) => (
   <button onClick={onClick} className={`flex flex-col items-center gap-1.5 transition-all duration-300 ${active ? 'scale-110' : 'opacity-60 hover:opacity-100'}`}>
      <div className={`p-3 rounded-2xl transition-all ${active ? 'bg-indigo-600 text-white shadow-xl shadow-indigo-200' : (activeTheme === Theme.Dark ? 'text-slate-400' : 'text-slate-600')}`}>
@@ -350,32 +349,44 @@ const App: React.FC = () => {
                 </div>
 
                 {verseExplanation && (
-                   <div className={`relative p-8 md:p-14 rounded-[3.5rem] border shadow-2xl font-serif leading-relaxed text-xl md:text-2xl page-transition ${cardBgClasses}`}>
-                      <div className="absolute top-8 right-8 flex gap-3">
-                         <button 
-                           onClick={handleSaveStudy}
-                           disabled={isStudySaved}
-                           className={`p-4 rounded-2xl transition-all ${isStudySaved ? 'bg-emerald-50 text-emerald-500 border-emerald-100' : 'bg-slate-50 dark:bg-slate-700 border hover:scale-110 active:scale-95'}`}
-                         >
-                           {isStudySaved ? <Check className="w-6 h-6" /> : <Bookmark className="w-6 h-6" />}
-                         </button>
-                         <button 
-                           onClick={handleShareStudy}
-                           className="p-4 bg-slate-50 dark:bg-slate-700 border rounded-2xl transition-all hover:scale-110 active:scale-95"
-                         >
-                           {isStudyShared ? <Check className="w-6 h-6 text-emerald-500" /> : <Share2 className="w-6 h-6" />}
-                         </button>
-                      </div>
-
-                      <div className={`whitespace-pre-wrap pr-12 md:pr-0 mt-8 md:mt-0 ${theme === Theme.Dark ? 'text-slate-100' : ''}`}>
+                   <div className={`p-8 md:p-14 rounded-[3.5rem] border shadow-2xl font-serif leading-relaxed text-xl md:text-2xl page-transition flex flex-col ${cardBgClasses}`}>
+                      <div className={`whitespace-pre-wrap mb-10 ${theme === Theme.Dark ? 'text-slate-100' : ''}`}>
                         {verseExplanation}
                       </div>
                       
-                      {isStudySaved && (
-                        <div className="mt-8 flex items-center gap-2 text-emerald-500 font-bold text-sm uppercase tracking-widest animate-pulse">
-                          <Check className="w-5 h-5" /> Saved to your library
-                        </div>
-                      )}
+                      {/* Actions Footer - Positioned under text */}
+                      <div className="flex flex-wrap items-center gap-4 pt-8 border-t border-slate-100 dark:border-slate-700/50">
+                         <button 
+                           onClick={handleSaveStudy}
+                           disabled={isStudySaved}
+                           className={`flex items-center gap-3 px-6 py-4 rounded-2xl border transition-all ${
+                             isStudySaved 
+                               ? 'bg-emerald-50 text-emerald-600 border-emerald-100 dark:bg-emerald-900/40 dark:text-emerald-400 dark:border-emerald-800' 
+                               : 'bg-slate-50 border-slate-200 text-slate-600 dark:bg-slate-900/60 dark:border-slate-500 dark:text-white hover:scale-105 active:scale-95'
+                           }`}
+                         >
+                           {isStudySaved ? <Check className="w-5 h-5" /> : <Bookmark className="w-5 h-5" />}
+                           <span className="text-xs font-black uppercase tracking-widest">{isStudySaved ? 'Saved to Library' : 'Save Study'}</span>
+                         </button>
+
+                         <button 
+                           onClick={handleShareStudy}
+                           className={`flex items-center gap-3 px-6 py-4 rounded-2xl border transition-all hover:scale-105 active:scale-95 ${
+                             theme === Theme.Dark 
+                               ? 'bg-slate-900/60 border-slate-500 text-white hover:bg-slate-800' 
+                               : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
+                           }`}
+                         >
+                           {isStudyShared ? <Check className="w-5 h-5 text-emerald-500" /> : <Share2 className="w-5 h-5" />}
+                           <span className="text-xs font-black uppercase tracking-widest">Share Insight</span>
+                         </button>
+
+                         {isStudySaved && (
+                            <div className="hidden sm:flex items-center gap-2 text-emerald-500 dark:text-emerald-400 font-bold text-xs uppercase tracking-widest animate-pulse ml-auto">
+                               <Check className="w-4 h-4" /> Ready in Library
+                            </div>
+                         )}
+                      </div>
                    </div>
                 )}
              </div>
