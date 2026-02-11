@@ -186,6 +186,8 @@ const App: React.FC = () => {
   }, [theme]);
 
   const cardBgClasses = theme === Theme.Dark ? 'bg-slate-800 border-slate-700' : theme === Theme.Sepia ? 'bg-[#e9dfc4] border-[#dcd0b3]' : 'bg-white border-slate-100';
+  const textTitleClasses = theme === Theme.Dark ? 'text-white' : theme === Theme.Sepia ? 'text-[#433422]' : 'text-slate-900';
+  const textMutedClasses = theme === Theme.Dark ? 'text-slate-400' : theme === Theme.Sepia ? 'text-[#8b6d4d]' : 'text-slate-500';
 
   if (selectedSong && activeTab === AppTab.Reader) {
     return (
@@ -339,7 +341,7 @@ const App: React.FC = () => {
                          </button>
                       </div>
 
-                      <div className="whitespace-pre-wrap pr-12 md:pr-0 mt-8 md:mt-0">
+                      <div className={`whitespace-pre-wrap pr-12 md:pr-0 mt-8 md:mt-0 ${theme === Theme.Dark ? 'text-slate-100' : ''}`}>
                         {verseExplanation}
                       </div>
                       
@@ -364,29 +366,31 @@ const App: React.FC = () => {
                    {favorites.length > 0 || savedStudies.length > 0 ? (
                       <>
                         {allSongs.filter(s => favorites.includes(s.id)).map(song => (
-                          <div key={song.id} className="flex gap-6 items-center p-6 rounded-[2.5rem] border hover:shadow-xl transition-all group bg-white dark:bg-slate-800">
+                          <div key={song.id} className={`flex gap-6 items-center p-6 rounded-[2.5rem] border hover:shadow-xl transition-all group ${cardBgClasses}`}>
                              <div className="w-24 h-24 rounded-3xl overflow-hidden shrink-0">
                                 <img src={song.image} className="w-full h-full object-cover group-hover:scale-110 transition-transform" />
                              </div>
                              <div className="flex-1">
-                                <h3 className="text-xl font-black">{song.title}</h3>
-                                <p className="opacity-50 italic text-sm">{song.reference}</p>
+                                <h3 className={`text-xl font-black ${textTitleClasses}`}>{song.title}</h3>
+                                <p className={`opacity-50 italic text-sm ${textMutedClasses}`}>{song.reference}</p>
                                 <button onClick={() => {setSelectedSong(song); setActiveTab(AppTab.Reader);}} className="mt-3 text-indigo-500 font-bold text-xs uppercase tracking-widest flex items-center gap-1">Read Now <ChevronRight className="w-4 h-4" /></button>
                              </div>
-                             <button onClick={() => toggleFavorite(song.id)} className="p-3 bg-rose-50 text-rose-500 rounded-2xl"><Trash2 className="w-5 h-5" /></button>
+                             <button onClick={() => toggleFavorite(song.id)} className="p-3 bg-rose-50 text-rose-500 rounded-2xl shrink-0"><Trash2 className="w-5 h-5" /></button>
                           </div>
                         ))}
                         
                         {savedStudies.map(study => (
-                          <div key={study.id} className="p-8 rounded-[2.5rem] border hover:shadow-xl transition-all bg-white dark:bg-slate-800 space-y-4">
+                          <div key={study.id} className={`p-8 rounded-[2.5rem] border hover:shadow-xl transition-all space-y-4 ${cardBgClasses}`}>
                              <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-3">
-                                   <div className="p-3 bg-indigo-50 text-indigo-600 rounded-xl"><Bookmark className="w-5 h-5" /></div>
-                                   <h3 className="text-xl font-black tracking-tight">{study.reference}</h3>
+                                   <div className={`p-3 rounded-xl ${theme === Theme.Dark ? 'bg-indigo-900/40 text-indigo-400' : 'bg-indigo-50 text-indigo-600'}`}><Bookmark className="w-5 h-5" /></div>
+                                   <h3 className={`text-xl font-black tracking-tight ${textTitleClasses}`}>{study.reference}</h3>
                                 </div>
                                 <button onClick={() => deleteSavedStudy(study.id)} className="p-3 text-rose-500 hover:bg-rose-50 rounded-xl transition-colors"><Trash2 className="w-5 h-5" /></button>
                              </div>
-                             <p className="opacity-60 text-sm line-clamp-3 font-serif leading-relaxed italic">{study.content}</p>
+                             <p className={`text-sm line-clamp-3 font-serif leading-relaxed italic ${theme === Theme.Dark ? 'text-slate-300' : 'opacity-60 text-slate-600'}`}>
+                               {study.content}
+                             </p>
                              <button 
                                onClick={() => {
                                  setStudyQuery(study.reference);
@@ -424,8 +428,8 @@ const App: React.FC = () => {
                            </div>
                          </div>
                          <div>
-                           <h2 className="text-4xl font-black tracking-tight">{user.name}</h2>
-                           <p className="opacity-50 font-bold uppercase tracking-[0.2em] text-xs mt-3">{user.email}</p>
+                           <h2 className={`text-4xl font-black tracking-tight ${textTitleClasses}`}>{user.name}</h2>
+                           <p className={`opacity-50 font-bold uppercase tracking-[0.2em] text-xs mt-3 ${textMutedClasses}`}>{user.email}</p>
                          </div>
                       </div>
 
@@ -433,19 +437,19 @@ const App: React.FC = () => {
                          <div className="grid grid-cols-2 gap-6">
                             <div className={`p-8 rounded-[3rem] border shadow-sm flex flex-col items-center justify-center gap-2 ${cardBgClasses}`}>
                                <Heart className="w-8 h-8 text-rose-500 mb-2" />
-                               <p className="text-4xl font-black">{favorites.length}</p>
+                               <p className={`text-4xl font-black ${textTitleClasses}`}>{favorites.length}</p>
                                <p className="text-xs font-black opacity-30 uppercase tracking-widest">Favorite Songs</p>
                             </div>
                             <div className={`p-8 rounded-[3rem] border shadow-sm flex flex-col items-center justify-center gap-2 ${cardBgClasses}`}>
                                <Bookmark className="w-8 h-8 text-amber-500 mb-2" />
-                               <p className="text-4xl font-black">{savedStudies.length}</p>
+                               <p className={`text-4xl font-black ${textTitleClasses}`}>{savedStudies.length}</p>
                                <p className="text-xs font-black opacity-30 uppercase tracking-widest">Insights</p>
                             </div>
                          </div>
 
                          <div className="space-y-4">
                             <button onClick={() => setActiveTab(AppTab.Developer)} className={`w-full p-8 rounded-[3rem] border font-bold flex items-center justify-between group transition-all hover:scale-[1.01] hover:shadow-xl ${cardBgClasses}`}>
-                               <span className="flex items-center gap-5 text-lg font-black"><Code2 className="w-8 h-8 text-indigo-500" /> Developer Profile</span>
+                               <span className={`flex items-center gap-5 text-lg font-black ${textTitleClasses}`}><Code2 className="w-8 h-8 text-indigo-500" /> Developer Profile</span>
                                <ChevronRight className="w-6 h-6 opacity-30 group-hover:opacity-100 group-hover:translate-x-2 transition-all" />
                             </button>
                             <button onClick={handleLogout} className="w-full p-8 bg-rose-50 dark:bg-rose-900/20 text-rose-600 rounded-[3rem] font-black uppercase tracking-widest text-xs flex items-center justify-center gap-3 hover:bg-rose-100 transition-all">
@@ -461,8 +465,8 @@ const App: React.FC = () => {
                         <LogIn className="w-12 h-12" />
                       </div>
                       <div className="space-y-2">
-                        <h2 className="text-4xl font-black tracking-tight">Join Sacred Melodies</h2>
-                        <p className="opacity-60 text-lg font-medium leading-relaxed">লগইন করুন আপনার প্রিয় গান এবং স্টাডি নোটগুলি সব ডিভাইসে সিনক্রোনাইজ করতে।</p>
+                        <h2 className={`text-4xl font-black tracking-tight ${textTitleClasses}`}>Join Sacred Melodies</h2>
+                        <p className={`opacity-60 text-lg font-medium leading-relaxed ${textMutedClasses}`}>লগইন করুন আপনার প্রিয় গান এবং স্টাডি নোটগুলি সব ডিভাইসে সিনক্রোনাইজ করতে।</p>
                       </div>
                     </div>
 
@@ -470,7 +474,7 @@ const App: React.FC = () => {
                       <button 
                         disabled={!!isLoggingIn}
                         onClick={() => handleSocialLogin('google')}
-                        className={`w-full py-5 px-8 rounded-3xl border font-black text-sm flex items-center justify-center gap-4 transition-all hover:shadow-xl active:scale-95 disabled:opacity-50 ${theme === Theme.Dark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}
+                        className={`w-full py-5 px-8 rounded-3xl border font-black text-sm flex items-center justify-center gap-4 transition-all hover:shadow-xl active:scale-95 disabled:opacity-50 ${theme === Theme.Dark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-slate-200'}`}
                       >
                         {isLoggingIn === 'google' ? <Loader2 className="w-6 h-6 animate-spin" /> : <Chrome className="w-6 h-6 text-rose-500" />}
                         CONTINUE WITH GOOGLE
@@ -507,7 +511,7 @@ const App: React.FC = () => {
                         </div>
                         <Award className="absolute -bottom-4 -right-4 w-20 h-20 text-white bg-indigo-600 p-5 rounded-[2rem] border-4 border-slate-900 shadow-2xl" />
                      </div>
-                     <h2 className="text-4xl font-black tracking-tighter uppercase mb-2 text-center">SOBUJ THEOTONIUS BISWAS</h2>
+                     <h2 className={`text-4xl font-black tracking-tighter uppercase mb-2 text-center ${textTitleClasses}`}>SOBUJ THEOTONIUS BISWAS</h2>
                      <p className="text-indigo-500 font-black tracking-[0.5em] uppercase text-xs mb-10">Fullstack AI Engineer</p>
                      
                      <div className="w-full space-y-6">
@@ -523,7 +527,7 @@ const App: React.FC = () => {
                         </div>
                         
                         <div className="grid grid-cols-4 gap-4">
-                           <button className={`p-6 rounded-[2rem] border flex items-center justify-center transition-all hover:scale-110 hover:shadow-xl ${cardBgClasses}`}><Github className="w-7 h-7" /></button>
+                           <button className={`p-6 rounded-[2rem] border flex items-center justify-center transition-all hover:scale-110 hover:shadow-xl ${cardBgClasses}`}><Github className={`w-7 h-7 ${textTitleClasses}`} /></button>
                            <button className={`p-6 rounded-[2rem] border flex items-center justify-center transition-all hover:scale-110 hover:shadow-xl ${cardBgClasses} text-blue-500`}><Globe className="w-7 h-7" /></button>
                            <button className={`p-6 rounded-[2rem] border flex items-center justify-center transition-all hover:scale-110 hover:shadow-xl ${cardBgClasses} text-indigo-600`}><Linkedin className="w-7 h-7" /></button>
                            <button className={`p-6 rounded-[2rem] border flex items-center justify-center transition-all hover:scale-110 hover:shadow-xl ${cardBgClasses} text-rose-500`}><Mail className="w-7 h-7" /></button>
