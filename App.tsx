@@ -601,17 +601,17 @@ const App: React.FC = () => {
                      {/* Premium Contact Hub */}
                      <div className="w-full space-y-6">
                         <a href="tel:+8801614802711" 
-                           className="relative flex items-center justify-center p-8 rounded-[3rem] bg-gradient-to-br from-indigo-600 via-indigo-700 to-violet-800 text-white shadow-[0_30px_60px_-15px_rgba(79,70,229,0.4)] hover:shadow-[0_40px_80px_-20px_rgba(79,70,229,0.55)] hover:scale-[1.03] active:scale-95 transition-all duration-500 group overflow-hidden border border-white/10">
-                           {/* Decorative glass reflection */}
-                           <div className="absolute top-0 -left-full w-1/2 h-full bg-gradient-to-r from-transparent via-white/20 to-transparent skew-x-[-30deg] group-hover:left-[150%] transition-all duration-1000 ease-in-out" />
+                           className="relative flex items-center justify-center p-8 rounded-[3rem] bg-gradient-to-br from-indigo-600 via-indigo-700 to-violet-800 text-white shadow-[0_30px_60px_-15px_rgba(79,70,229,0.4)] hover:shadow-[0_40px_80px_-20px_rgba(79,70,229,0.55)] hover:scale-[1.03] active:scale-95 transition-all duration-500 group overflow-hidden border border-white/10 ring-4 ring-white/10">
+                           {/* Decorative glass reflection & shine */}
+                           <div className="absolute top-0 -left-full w-full h-full bg-gradient-to-r from-transparent via-white/30 to-transparent skew-x-[-45deg] group-hover:left-[150%] transition-all duration-1000 ease-in-out" />
                            
                            <div className="flex flex-col items-center gap-3 relative z-10">
-                              <div className="p-4 bg-white/10 backdrop-blur-xl rounded-2xl border border-white/20 shadow-inner group-hover:bg-white/20 transition-colors">
-                                 <PhoneCall className="w-8 h-8 text-white animate-bounce" style={{ animationDuration: '3s' }} />
+                              <div className="p-5 bg-white/20 backdrop-blur-2xl rounded-[2rem] border border-white/30 shadow-2xl group-hover:scale-110 group-hover:rotate-6 transition-all">
+                                 <PhoneCall className="w-9 h-9 text-white animate-pulse" />
                               </div>
                               <div className="text-center">
-                                 <p className="text-[11px] font-black opacity-70 uppercase tracking-[0.3em] mb-1">CALL DIRECTLY</p>
-                                 <p className="text-3xl font-black tracking-tighter">01614802711</p>
+                                 <p className="text-[12px] font-black opacity-80 uppercase tracking-[0.4em] mb-2 drop-shadow-md">CALL DIRECTLY</p>
+                                 <p className="text-4xl font-black tracking-tighter drop-shadow-lg leading-none">01614802711</p>
                               </div>
                            </div>
                         </a>
