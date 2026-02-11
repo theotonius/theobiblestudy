@@ -9,7 +9,7 @@ import {
   ShieldCheck, Facebook, Share2, Check, Bookmark, Trash2, 
   ChevronLeft, ChevronRight, CloudOff, X, Moon, Sun, Coffee, 
   Code2, Github, Globe, Linkedin, Mail, Smartphone, Award, Laptop, Wand2, AlertCircle,
-  LogIn, Chrome, Settings, UserCircle
+  LogIn, Chrome, Settings, UserCircle, Cpu, Layers, Zap, PhoneCall
 } from 'lucide-react';
 import { fetchSongFromAI, explainVerse } from './services/geminiService';
 
@@ -538,41 +538,110 @@ const App: React.FC = () => {
           )}
 
           {activeTab === AppTab.Developer && (
-            <div className="max-w-2xl mx-auto py-12">
-               <button onClick={() => setActiveTab(AppTab.Profile)} className="flex items-center gap-2 mb-10 font-black text-xs uppercase tracking-widest opacity-60 hover:opacity-100 transition-opacity">
-                 <ChevronLeft className="w-5 h-5" /> Back to Profile
+            <div className="max-w-3xl mx-auto py-10 px-4">
+               {/* Header Navigation */}
+               <button onClick={() => setActiveTab(AppTab.Profile)} className="flex items-center gap-3 mb-10 group">
+                 <div className={`p-3 rounded-2xl transition-all ${cardBgClasses} group-hover:scale-110`}>
+                   <ChevronLeft className="w-5 h-5" />
+                 </div>
+                 <span className="font-black text-xs uppercase tracking-[0.2em] opacity-60 group-hover:opacity-100 transition-opacity">Back to Profile</span>
                </button>
-               <div className={`p-10 md:p-16 rounded-[4rem] border shadow-2xl relative overflow-hidden transition-all hover:shadow-indigo-100/20 ${cardBgClasses}`}>
-                  <div className="relative z-10 flex flex-col items-center">
-                     <div className="relative mb-10">
-                        <div className="w-64 h-64 rounded-[4.5rem] p-1.5 border-4 border-indigo-600 shadow-2xl overflow-hidden">
-                           <img src="https://media.licdn.com/dms/image/v2/C4D03AQH4u2X5M9E83w/profile-displayphoto-shrink_800_800/profile-displayphoto-shrink_800_800/0/1654512403714?e=1746662400&v=beta&t=90Gz0p-C3p-kPIdmK940L638G5XqIeXvYIq40Uq4-uU" className="w-full h-full object-cover rounded-[4rem]" alt="Developer" />
+
+               {/* Main Profile Card */}
+               <div className={`relative rounded-[3.5rem] md:rounded-[5rem] border shadow-2xl overflow-hidden page-transition ${cardBgClasses}`}>
+                  {/* Background Accents */}
+                  <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 blur-[80px] -mr-32 -mt-32 rounded-full" />
+                  <div className="absolute bottom-0 left-0 w-48 h-48 bg-purple-500/10 blur-[60px] -ml-24 -mb-24 rounded-full" />
+
+                  <div className="relative z-10 px-6 py-12 md:p-16 flex flex-col items-center text-center">
+                     {/* Profile Image with Ring Glow */}
+                     <div className="relative mb-8">
+                        <div className="absolute inset-0 bg-indigo-500/20 blur-2xl rounded-full scale-110" />
+                        <div className="w-48 h-48 md:w-56 md:h-56 rounded-[3.5rem] md:rounded-[4.5rem] p-1.5 bg-gradient-to-tr from-indigo-600 via-purple-500 to-indigo-400 shadow-2xl overflow-hidden relative">
+                           <img src="https://media.licdn.com/dms/image/v2/C4D03AQH4u2X5M9E83w/profile-displayphoto-shrink_800_800/profile-displayphoto-shrink_800_800/0/1654512403714?e=1746662400&v=beta&t=90Gz0p-C3p-kPIdmK940L638G5XqIeXvYIq40Uq4-uU" 
+                                className="w-full h-full object-cover rounded-[3rem] md:rounded-[4rem]" 
+                                alt="Sobuj Biswas" />
                         </div>
-                        <Award className="absolute -bottom-4 -right-4 w-20 h-20 text-white bg-indigo-600 p-5 rounded-[2rem] border-4 border-slate-900 shadow-2xl" />
+                        <div className="absolute -bottom-3 -right-3 w-14 h-14 bg-white dark:bg-slate-900 rounded-2xl flex items-center justify-center border-4 border-[#fafafa] dark:border-slate-800 shadow-xl">
+                          <Zap className="w-6 h-6 text-indigo-600 animate-pulse" />
+                        </div>
                      </div>
-                     <h2 className={`text-4xl font-black tracking-tighter uppercase mb-2 text-center ${textTitleClasses}`}>SOBUJ THEOTONIUS BISWAS</h2>
-                     <p className="text-indigo-500 font-black tracking-[0.5em] uppercase text-xs mb-10">Fullstack AI Engineer</p>
+
+                     {/* Info Section */}
+                     <div className="space-y-4 max-w-lg mb-10">
+                        <h2 className={`text-3xl md:text-5xl font-black tracking-tighter leading-tight ${textTitleClasses}`}>
+                          SOBUJ THEOTONIUS BISWAS
+                        </h2>
+                        <div className="flex flex-wrap items-center justify-center gap-2">
+                           <span className="px-4 py-1.5 rounded-full bg-indigo-600/10 border border-indigo-600/20 text-indigo-600 dark:text-indigo-400 text-[10px] font-black uppercase tracking-widest">Fullstack Engineer</span>
+                           <span className="px-4 py-1.5 rounded-full bg-purple-600/10 border border-purple-600/20 text-purple-600 dark:text-purple-400 text-[10px] font-black uppercase tracking-widest">AI Expert</span>
+                           <span className="px-4 py-1.5 rounded-full bg-emerald-600/10 border border-emerald-600/20 text-emerald-600 dark:text-emerald-400 text-[10px] font-black uppercase tracking-widest">React Enthusiast</span>
+                        </div>
+                        <p className={`text-sm md:text-lg font-medium opacity-60 px-4 ${textMutedClasses}`}>
+                          Crafting meaningful digital experiences through clean code and spiritual mindfulness.
+                        </p>
+                     </div>
+
+                     {/* Mobile Optimized Expertise Grid */}
+                     <div className="w-full grid grid-cols-3 gap-3 mb-10">
+                        <div className={`p-4 rounded-3xl border flex flex-col items-center gap-2 ${theme === Theme.Dark ? 'bg-slate-900/40' : 'bg-slate-50'}`}>
+                           <Cpu className="w-6 h-6 text-indigo-500" />
+                           <span className="text-[10px] font-black uppercase opacity-60">AI Dev</span>
+                        </div>
+                        <div className={`p-4 rounded-3xl border flex flex-col items-center gap-2 ${theme === Theme.Dark ? 'bg-slate-900/40' : 'bg-slate-50'}`}>
+                           <Layers className="w-6 h-6 text-purple-500" />
+                           <span className="text-[10px] font-black uppercase opacity-60">Architecture</span>
+                        </div>
+                        <div className={`p-4 rounded-3xl border flex flex-col items-center gap-2 ${theme === Theme.Dark ? 'bg-slate-900/40' : 'bg-slate-50'}`}>
+                           <Zap className="w-6 h-6 text-amber-500" />
+                           <span className="text-[10px] font-black uppercase opacity-60">Performance</span>
+                        </div>
+                     </div>
                      
+                     {/* Premium Contact Hub */}
                      <div className="w-full space-y-6">
-                        <div className="flex items-center justify-between p-8 bg-indigo-600 text-white rounded-[3rem] shadow-2xl shadow-indigo-200">
-                           <div className="flex items-center gap-5">
-                              <div className="p-4 bg-white/20 rounded-2xl"><Smartphone className="w-8 h-8" /></div>
-                              <div className="text-left">
-                                 <p className="text-[10px] font-black opacity-60 uppercase tracking-widest mb-1">Direct Connect</p>
-                                 <p className="text-2xl font-black tracking-tighter">+8801614-802711</p>
+                        <a href="tel:+8801614802711" 
+                           className="relative flex items-center justify-center p-8 rounded-[3rem] bg-gradient-to-br from-indigo-600 via-indigo-700 to-violet-800 text-white shadow-[0_30px_60px_-15px_rgba(79,70,229,0.4)] hover:shadow-[0_40px_80px_-20px_rgba(79,70,229,0.55)] hover:scale-[1.03] active:scale-95 transition-all duration-500 group overflow-hidden border border-white/10">
+                           {/* Decorative glass reflection */}
+                           <div className="absolute top-0 -left-full w-1/2 h-full bg-gradient-to-r from-transparent via-white/20 to-transparent skew-x-[-30deg] group-hover:left-[150%] transition-all duration-1000 ease-in-out" />
+                           
+                           <div className="flex flex-col items-center gap-3 relative z-10">
+                              <div className="p-4 bg-white/10 backdrop-blur-xl rounded-2xl border border-white/20 shadow-inner group-hover:bg-white/20 transition-colors">
+                                 <PhoneCall className="w-8 h-8 text-white animate-bounce" style={{ animationDuration: '3s' }} />
+                              </div>
+                              <div className="text-center">
+                                 <p className="text-[11px] font-black opacity-70 uppercase tracking-[0.3em] mb-1">CALL DIRECTLY</p>
+                                 <p className="text-3xl font-black tracking-tighter">01614802711</p>
                               </div>
                            </div>
-                           <a href="tel:+8801614802711" className="p-5 bg-white text-indigo-600 rounded-full hover:scale-110 active:scale-95 transition-all shadow-lg"><Smartphone className="w-6 h-6" /></a>
-                        </div>
-                        
-                        <div className="grid grid-cols-4 gap-4">
-                           <button className={`p-6 rounded-[2rem] border flex items-center justify-center transition-all hover:scale-110 hover:shadow-xl ${cardBgClasses}`}><Github className={`w-7 h-7 ${textTitleClasses}`} /></button>
-                           <button className={`p-6 rounded-[2rem] border flex items-center justify-center transition-all hover:scale-110 hover:shadow-xl ${cardBgClasses} text-blue-500`}><Globe className="w-7 h-7" /></button>
-                           <button className={`p-6 rounded-[2rem] border flex items-center justify-center transition-all hover:scale-110 hover:shadow-xl ${cardBgClasses} text-indigo-600`}><Linkedin className="w-7 h-7" /></button>
-                           <button className={`p-6 rounded-[2rem] border flex items-center justify-center transition-all hover:scale-110 hover:shadow-xl ${cardBgClasses} text-rose-500`}><Mail className="w-7 h-7" /></button>
+                        </a>
+
+                        <div className="grid grid-cols-4 gap-3">
+                           <a href="https://github.com" target="_blank" rel="noreferrer" 
+                              className={`p-5 rounded-[2rem] border flex items-center justify-center transition-all hover:bg-slate-900 hover:text-white hover:scale-110 active:scale-90 ${cardBgClasses}`}>
+                              <Github className="w-6 h-6" />
+                           </a>
+                           <a href="https://www.linkedin.com/in/sobuj-theotonius-biswas/" target="_blank" rel="noreferrer"
+                              className={`p-5 rounded-[2rem] border flex items-center justify-center transition-all hover:bg-[#0077b5] hover:text-white hover:scale-110 active:scale-90 ${cardBgClasses}`}>
+                              <Linkedin className="w-6 h-6" />
+                           </a>
+                           <a href="mailto:theotonius2012@gmail.com"
+                              className={`p-5 rounded-[2rem] border flex items-center justify-center transition-all hover:bg-rose-500 hover:text-white hover:scale-110 active:scale-90 ${cardBgClasses}`}>
+                              <Mail className="w-6 h-6" />
+                           </a>
+                           <a href="https://theotonius.com" target="_blank" rel="noreferrer"
+                              className={`p-5 rounded-[2rem] border flex items-center justify-center transition-all hover:bg-emerald-500 hover:text-white hover:scale-110 active:scale-90 ${cardBgClasses}`}>
+                              <Globe className="w-6 h-6" />
+                           </a>
                         </div>
                      </div>
                   </div>
+               </div>
+
+               {/* Appreciation Footer */}
+               <div className="mt-10 text-center space-y-2 opacity-40">
+                 <p className="text-[10px] font-black uppercase tracking-[0.3em]">Built with Love & Grace</p>
+                 <p className="text-[9px] font-medium">Sacred Melodies App v1.0.4 • Dhaka, BD</p>
                </div>
             </div>
           )}
