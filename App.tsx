@@ -4,8 +4,7 @@ import { BIBLE_SONGS, PRE_CACHED_STUDIES } from './constants';
 import { Song, AppTab, UserProfile, SavedStudy, Theme } from './types';
 import SongCard from './components/SongCard';
 import Reader from './components/Reader';
-// Added MessageCircle for WhatsApp/Chat feel if needed later
-import { Music, Search, Heart, User, Sparkles, Loader2, BookOpen, LogOut, ShieldCheck, Facebook, Share2, Check, Bookmark, Trash2, ChevronLeft, ChevronRight, CloudOff, X, Moon, Sun, Coffee, Code2, Github, Globe, Linkedin, Mail, ExternalLink, Cpu, Phone, Smartphone, MessageCircle } from 'lucide-react';
+import { Music, Search, Heart, User, Sparkles, Loader2, BookOpen, LogOut, ShieldCheck, Facebook, Share2, Check, Bookmark, Trash2, ChevronLeft, ChevronRight, CloudOff, X, Moon, Sun, Coffee, Code2, Github, Globe, Linkedin, Mail, ExternalLink, Cpu, Phone, Smartphone, MessageCircle, Shield, Award } from 'lucide-react';
 import { fetchSongFromAI, composeNewSong, explainVerse } from './services/geminiService';
 
 const App: React.FC = () => {
@@ -465,62 +464,76 @@ const App: React.FC = () => {
                <span className="text-xs font-bold uppercase tracking-widest">Back to Profile</span>
             </button>
 
-            <div className={`p-8 rounded-[2.5rem] border shadow-2xl relative overflow-hidden ${cardBgClasses}`}>
-               <div className="absolute top-0 right-0 p-8 opacity-[0.05]">
-                  <Code2 className="w-32 h-32" />
-               </div>
+            <div className={`p-8 rounded-[3rem] border shadow-2xl relative overflow-hidden ${theme === Theme.Dark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
+               {/* Background Decorative Element */}
+               <div className={`absolute -top-20 -right-20 w-64 h-64 rounded-full blur-[100px] opacity-20 ${theme === Theme.Dark ? 'bg-indigo-500' : 'bg-amber-500'}`} />
 
-               <div className="relative z-10">
-                  <div className="relative mb-6">
-                    <div className={`w-28 h-28 rounded-3xl p-1 shadow-2xl border-4 ${theme === Theme.Dark ? 'border-indigo-500/30' : 'border-white'}`}>
+               <div className="relative z-10 flex flex-col items-center">
+                  <div className="relative mb-8">
+                    <div className={`w-48 h-48 rounded-[3rem] p-1.5 shadow-2xl border-4 ${theme === Theme.Dark ? 'border-indigo-600/50' : 'border-slate-100'}`}>
                        <img 
-                         src="https://media.licdn.com/dms/image/v2/C5103AQG8_249BvL81w/profile-displayphoto-shrink_800_800/profile-displayphoto-shrink_800_800/0/1574512403714?e=1746662400&v=beta&t=90Gz0p-C3p-kPIdmK940L638G5XqIeXvYIq40Uq4-uU" 
+                         src="https://media.licdn.com/dms/image/v2/C4D03AQH4u2X5M9E83w/profile-displayphoto-shrink_800_800/profile-displayphoto-shrink_800_800/0/1654512403714?e=1746662400&v=beta&t=90Gz0p-C3p-kPIdmK940L638G5XqIeXvYIq40Uq4-uU" 
                          alt="SOBUJ THEOTONIUS BISWAS" 
-                         className="w-full h-full object-cover rounded-[1.4rem]" 
+                         className="w-full h-full object-cover rounded-[2.6rem]" 
                        />
                     </div>
-                    <div className="absolute -bottom-2 -right-2 w-10 h-10 bg-indigo-500 rounded-2xl flex items-center justify-center border-4 border-slate-900 shadow-lg">
-                       <Cpu className="w-5 h-5 text-white" />
+                    <div className="absolute -bottom-2 -right-2 w-14 h-14 bg-indigo-600 rounded-2xl flex items-center justify-center border-4 border-slate-900 shadow-xl">
+                       <Award className="w-7 h-7 text-white" />
                     </div>
                   </div>
                   
-                  <h2 className="text-2xl font-black mb-1 leading-tight">SOBUJ THEOTONIUS BISWAS</h2>
-                  <p className="text-[10px] font-bold text-indigo-500 uppercase tracking-widest mb-6">Fullstack AI Engineer</p>
+                  <div className="text-center mb-8">
+                    <h2 className="text-2xl font-black mb-1 leading-tight tracking-tight uppercase">SOBUJ THEOTONIUS BISWAS</h2>
+                    <div className="flex items-center justify-center gap-2">
+                      <span className={`text-[10px] font-black uppercase tracking-[0.3em] ${theme === Theme.Dark ? 'text-indigo-400' : 'text-indigo-600'}`}>Fullstack AI Engineer</span>
+                      <ShieldCheck className="w-3 h-3 text-emerald-500" />
+                    </div>
+                  </div>
                   
-                  <p className="text-sm leading-relaxed opacity-70 mb-8 font-medium italic">
-                    "Creating tools that bridge the gap between faith and technology. Sacred Melodies is a labor of love, designed to bring peace and spiritual growth through music and understanding."
-                  </p>
+                  <div className={`p-6 rounded-3xl mb-8 font-medium italic text-center text-sm leading-relaxed ${theme === Theme.Dark ? 'bg-slate-800/50 text-slate-300' : 'bg-slate-50 text-slate-600'}`}>
+                    "Technology is the vessel, but faith is the compass. Sacred Melodies is designed to nurture your soul through every lyric and every verse."
+                  </div>
 
-                  <div className="space-y-4">
-                     <div className={`p-4 rounded-2xl border flex items-center gap-4 ${theme === Theme.Dark ? 'bg-slate-700/30 border-slate-600' : 'bg-indigo-50/50 border-indigo-100'}`}>
-                        <div className="w-10 h-10 rounded-xl bg-indigo-500 flex items-center justify-center text-white shrink-0">
-                           <Smartphone className="w-5 h-5" />
+                  <div className="w-full space-y-4">
+                     {/* Contact Section */}
+                     <div className={`p-5 rounded-3xl border flex items-center justify-between group transition-all ${theme === Theme.Dark ? 'bg-slate-800/80 border-slate-700' : 'bg-indigo-50/50 border-indigo-100 shadow-sm'}`}>
+                        <div className="flex items-center gap-4">
+                          <div className="w-12 h-12 rounded-2xl bg-indigo-600 flex items-center justify-center text-white shrink-0 shadow-lg shadow-indigo-600/20">
+                             <Smartphone className="w-6 h-6" />
+                          </div>
+                          <div>
+                             <h3 className="text-[9px] font-black uppercase tracking-widest opacity-40 mb-0.5">Primary Phone</h3>
+                             <p className={`text-sm font-bold tracking-tight ${theme === Theme.Dark ? 'text-indigo-300' : 'text-indigo-700'}`}>+8801614802711</p>
+                          </div>
                         </div>
-                        <div>
-                           <h3 className="text-[10px] font-black uppercase tracking-widest opacity-40">Direct Contact</h3>
-                           <p className="text-sm font-bold tracking-tight">+8801614802711</p>
-                        </div>
+                        <a href="tel:+8801614802711" className="p-3 bg-indigo-600 text-white rounded-xl shadow-md hover:scale-105 active:scale-95 transition-all">
+                           <Phone className="w-4 h-4" />
+                        </a>
                      </div>
 
-                     <div>
-                        <h3 className="text-[10px] font-black uppercase tracking-widest opacity-40 mb-3">Connect</h3>
-                        <div className="grid grid-cols-4 gap-4">
-                           <button className={`p-3 rounded-2xl border flex items-center justify-center transition-all hover:scale-110 ${cardBgClasses}`}><Github className="w-5 h-5" /></button>
-                           <button className={`p-3 rounded-2xl border flex items-center justify-center transition-all hover:scale-110 ${cardBgClasses}`}><Globe className="w-5 h-5 text-blue-500" /></button>
-                           <button className={`p-3 rounded-2xl border flex items-center justify-center transition-all hover:scale-110 ${cardBgClasses}`}><Linkedin className="w-5 h-5 text-indigo-600" /></button>
-                           <button className={`p-3 rounded-2xl border flex items-center justify-center transition-all hover:scale-110 ${cardBgClasses}`}><Mail className="w-5 h-5 text-rose-500" /></button>
-                        </div>
+                     {/* Socials */}
+                     <div className="grid grid-cols-4 gap-4">
+                        {[
+                          { icon: <Github className="w-5 h-5" />, color: 'hover:text-slate-400' },
+                          { icon: <Linkedin className="w-5 h-5" />, color: 'hover:text-blue-600' },
+                          { icon: <Mail className="w-5 h-5" />, color: 'hover:text-rose-500' },
+                          { icon: <Globe className="w-5 h-5" />, color: 'hover:text-emerald-500' }
+                        ].map((social, i) => (
+                          <button key={i} className={`p-4 rounded-2xl border flex items-center justify-center transition-all hover:scale-110 hover:shadow-lg ${cardBgClasses} ${social.color}`}>
+                            {social.icon}
+                          </button>
+                        ))}
                      </div>
 
-                     <button className="w-full bg-amber-500 text-white py-4 rounded-2xl font-black text-sm uppercase tracking-[0.2em] flex items-center justify-center gap-2 shadow-xl shadow-amber-500/20 mt-2">
-                        <Coffee className="w-5 h-5" /> Buy Me a Coffee
+                     <button className="w-full bg-gradient-to-r from-amber-500 to-orange-600 text-white py-5 rounded-[2rem] font-black text-sm uppercase tracking-[0.2em] flex items-center justify-center gap-3 shadow-2xl shadow-amber-500/30 mt-6 hover:translate-y-[-2px] active:translate-y-0 transition-all">
+                        <Coffee className="w-6 h-6" /> Support the Vision
                      </button>
                   </div>
                </div>
             </div>
 
             <div className="mt-8 text-center opacity-40">
-               <p className="text-[10px] font-bold uppercase tracking-widest">Version 2.5.0 • Build 2025</p>
+               <p className="text-[9px] font-bold uppercase tracking-[0.4em]">Propelling Faith • Version 2.5.2</p>
             </div>
           </div>
         ) : activeTab === AppTab.Study ? (
