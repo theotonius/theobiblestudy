@@ -41,6 +41,44 @@
         from { opacity: 0; transform: translateY(20px); }
         to { opacity: 1; transform: translateY(0); }
       }
+
+      /* Background Animations */
+      @keyframes float {
+        0% { transform: translate(0, 0); opacity: 0.3; }
+        50% { transform: translate(30px, -30px); opacity: 0.6; }
+        100% { transform: translate(0, 0); opacity: 0.3; }
+      }
+      @keyframes rays {
+        0% { transform: rotate(0deg) scale(1); opacity: 0.1; }
+        50% { transform: rotate(5deg) scale(1.1); opacity: 0.2; }
+        100% { transform: rotate(0deg) scale(1); opacity: 0.1; }
+      }
+      @keyframes wave {
+        0% { transform: scale(1); opacity: 0.05; }
+        50% { transform: scale(1.1); opacity: 0.1; }
+        100% { transform: scale(1); opacity: 0.05; }
+      }
+
+      .animate-celestial {
+        animation: float 15s ease-in-out infinite;
+      }
+      .animate-rays {
+        animation: rays 20s ease-in-out infinite;
+      }
+      .animate-wave {
+        animation: wave 12s ease-in-out infinite;
+      }
+
+      /* Focus Glow Animation for Search */
+      @keyframes focus-glow {
+        0%, 100% { box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1); border-color: rgba(99, 102, 241, 0.3); }
+        50% { box-shadow: 0 0 0 12px rgba(99, 102, 241, 0.15); border-color: rgba(99, 102, 241, 0.6); }
+      }
+      .animate-focus-glow:focus {
+        animation: focus-glow 3s ease-in-out infinite;
+        outline: none;
+      }
+
       /* PWA Display tweaks */
       @media all and (display-mode: standalone) {
         body {

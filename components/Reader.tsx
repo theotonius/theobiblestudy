@@ -5,7 +5,7 @@ import { generateReflection, speakLyrics, decodeBase64Audio, decodeAudioData } f
 
 interface ReaderProps {
   song: Song;
-  onBack: () => void;
+  onBack: void | (() => void);
   isFavorite: boolean;
   onToggleFavorite: (id: string) => void;
   theme: Theme;
@@ -100,13 +100,36 @@ const Reader: React.FC<ReaderProps> = ({ song, onBack, isFavorite, onToggleFavor
   }, []);
 
   return (
-    <div className={`flex flex-col min-h-screen transition-colors duration-500 overflow-x-hidden ${themeClasses}`}>
+    <div className={`flex flex-col min-h-screen transition-colors duration-500 overflow-x-hidden relative ${themeClasses}`}>
       
+      {/* Subtle Atmospheric Background */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
+        {theme === Theme.Dark && (
+          <>
+            <div className="absolute top-1/4 -left-20 w-80 h-80 bg-indigo-500/10 blur-[100px] animate-celestial" />
+            <div className="absolute bottom-1/4 -right-20 w-96 h-96 bg-purple-500/10 blur-[120px] animate-celestial" style={{ animationDelay: '-5s' }} />
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full opacity-10" style={{ backgroundImage: 'radial-gradient(circle, #fff 1px, transparent 1px)', backgroundSize: '100px 100px' }} />
+          </>
+        )}
+        {theme === Theme.Sepia && (
+          <>
+            <div className="absolute top-0 right-0 w-full h-full bg-gradient-to-br from-amber-200/5 to-transparent animate-rays origin-top-right" />
+            <div className="absolute top-1/3 -left-10 w-40 h-screen bg-amber-400/5 blur-3xl rotate-12 animate-rays" style={{ animationDelay: '-10s' }} />
+          </>
+        )}
+        {theme === Theme.Light && (
+          <>
+            <div className="absolute top-1/4 left-1/4 w-96 h-96 border-[40px] border-indigo-500/5 rounded-full blur-2xl animate-wave" />
+            <div className="absolute bottom-1/4 right-1/4 w-80 h-80 border-[30px] border-indigo-400/5 rounded-full blur-2xl animate-wave" style={{ animationDelay: '-4s' }} />
+          </>
+        )}
+      </div>
+
       {/* Dynamic Header */}
       <div className={`sticky top-0 z-50 border-b backdrop-blur-xl ${theme === Theme.Dark ? 'bg-slate-900/80 border-slate-800' : 'bg-white/80 border-slate-200'}`}>
         <div className="max-w-6xl mx-auto px-6 h-16 md:h-20 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <button onClick={onBack} className={`p-3 rounded-2xl transition-all active:scale-90 ${theme === Theme.Dark ? 'hover:bg-slate-800' : 'hover:bg-slate-50'}`}>
+            <button onClick={onBack as any} className={`p-3 rounded-2xl transition-all active:scale-90 ${theme === Theme.Dark ? 'hover:bg-slate-800' : 'hover:bg-slate-50'}`}>
               <ChevronLeft className="w-6 h-6" />
             </button>
             <div className="hidden sm:block">
@@ -145,7 +168,7 @@ const Reader: React.FC<ReaderProps> = ({ song, onBack, isFavorite, onToggleFavor
       </div>
 
       {/* Content Area */}
-      <div className="flex-1 max-w-4xl mx-auto w-full px-8 py-12 md:py-20 selection:bg-indigo-100">
+      <div className="flex-1 max-w-4xl mx-auto w-full px-8 py-12 md:py-20 selection:bg-indigo-100 relative z-10">
         <div className="space-y-10 md:space-y-12">
           {song.lyrics.map((line, idx) => (
             <p 
@@ -159,7 +182,7 @@ const Reader: React.FC<ReaderProps> = ({ song, onBack, isFavorite, onToggleFavor
         </div>
 
         {/* AI Insight Section */}
-        <div className="mt-20 max-w-2xl mx-auto">
+        <div className="mt-20 max-w-2xl mx-auto relative z-20">
           {!reflection && !isLoadingReflection ? (
             <button onClick={handleGetReflection} className={`w-full py-6 px-8 rounded-3xl border flex items-center justify-center gap-3 transition-all hover:scale-[1.02] hover:shadow-xl font-black text-xs uppercase tracking-widest ${theme === Theme.Dark ? 'bg-indigo-900/20 border-indigo-500/30 text-indigo-400' : 'bg-white border-indigo-100 text-indigo-600 shadow-sm'}`}>
               <Sparkles className="w-5 h-5" /> Generate AI Reflection

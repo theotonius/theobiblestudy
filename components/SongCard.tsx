@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Song, Theme } from '../types';
 
@@ -15,7 +16,7 @@ const SongCard: React.FC<SongCardProps> = ({ song, theme, onClick }) => {
   return (
     <div 
       onClick={() => onClick(song)}
-      className={`group relative rounded-[2.5rem] overflow-hidden shadow-sm hover:shadow-2xl hover:shadow-indigo-500/10 transition-all duration-500 cursor-pointer border ${cardBgClasses} hover:-translate-y-2 active:scale-95`}
+      className={`group relative rounded-[2.5rem] overflow-hidden shadow-sm hover:shadow-2xl hover:shadow-indigo-500/10 transition-all duration-500 cursor-pointer border ${cardBgClasses} hover:-translate-y-2 active:scale-[0.98]`}
     >
       <div className="aspect-[16/10] w-full overflow-hidden relative">
         <img 
@@ -25,6 +26,7 @@ const SongCard: React.FC<SongCardProps> = ({ song, theme, onClick }) => {
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
       </div>
+      
       <div className="p-7">
         <span className={`text-[10px] uppercase tracking-[0.2em] font-black px-3 py-1 rounded-full ${
             theme === Theme.Dark ? 'bg-indigo-900/30 text-indigo-400' : theme === Theme.Sepia ? 'bg-[#dcd0b3] text-[#5b4636]' : 'bg-indigo-50 text-indigo-600'

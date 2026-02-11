@@ -1,16 +1,10 @@
 
 import { GoogleGenAI, Modality, Type } from "@google/genai";
 
-const getAI = () => {
-  // Vercel বা অন্যান্য পরিবেশে অনেক সময় API_KEY বা GEMINI_API_KEY নামে সেভ থাকে
-  const key = process.env.API_KEY || (process.env as any).GEMINI_API_KEY;
-  if (!key) {
-    console.error("API Key is missing! Please set API_KEY in your environment variables.");
-  }
-  return new GoogleGenAI({ apiKey: key || "" });
-};
+// Initialize AI with API Key from environment variables as per guidelines
+const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
-// সাময়িক সার্ভার সমস্যা এড়াতে Retry Logic
+// Samayik server somossa erate Retry Logic
 async function withRetry<T>(fn: () => Promise<T>, retries = 2, delay = 1000): Promise<T> {
   try {
     return await fn();
@@ -23,7 +17,6 @@ async function withRetry<T>(fn: () => Promise<T>, retries = 2, delay = 1000): Pr
 
 export const generateReflection = async (songTitle: string, lyrics: string[]) => {
   return withRetry(async () => {
-    const ai = getAI();
     const prompt = `Based on the lyrics of the Bible song "${songTitle}", provide a short spiritual reflection and a related Bible verse. Lyrics: ${lyrics.join(' ')}`;
     
     const response = await ai.models.generateContent({
@@ -33,6 +26,7 @@ export const generateReflection = async (songTitle: string, lyrics: string[]) =>
         systemInstruction: "You are a thoughtful spiritual guide. Keep reflections brief, encouraging, and centered on the themes of the song provided."
       }
     });
+    // Use .text property directly as per guidelines
     return response.text;
   }).catch(error => {
     console.error("Reflection Error:", error);
@@ -42,7 +36,6 @@ export const generateReflection = async (songTitle: string, lyrics: string[]) =>
 
 export const explainVerse = async (verseReference: string) => {
   return withRetry(async () => {
-    const ai = getAI();
     const prompt = `Explain the Bible verse "${verseReference}" in Bengali. Provide: 1. The verse itself. 2. Historical/Spiritual Context. 3. Detailed Meaning. 4. Life Application. Format as clear sections.`;
     
     const response = await ai.models.generateContent({
@@ -52,6 +45,7 @@ export const explainVerse = async (verseReference: string) => {
         systemInstruction: "You are an expert biblical scholar and theologian. Your goal is to explain Bible verses in a clear, deep, and spiritually enriching way in Bengali."
       }
     });
+    // Use .text property directly
     return response.text;
   }).catch(error => {
     console.error("Explanation Error:", error);
@@ -61,7 +55,6 @@ export const explainVerse = async (verseReference: string) => {
 
 export const fetchSongFromAI = async (query: string) => {
   return withRetry(async () => {
-    const ai = getAI();
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
       contents: `Find the lyrics for the Bible song or hymn: "${query}". Return the title, primary Bible reference, category, and lyrics as a list of lines. Return as JSON.`,
@@ -79,6 +72,7 @@ export const fetchSongFromAI = async (query: string) => {
         }
       }
     });
+    // Use .text property directly
     const text = response.text?.trim() || '{}';
     return JSON.parse(text);
   }).catch(error => {
@@ -89,10 +83,10 @@ export const fetchSongFromAI = async (query: string) => {
 
 export const speakLyrics = async (text: string) => {
   return withRetry(async () => {
-    const ai = getAI();
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash-preview-tts",
-      contents: `Read these lyrics warmly: ${text}`,
+      // Use the formal parts structure for TTS contents as per examples
+      contents: [{ parts: [{ text: `Read these lyrics warmly: ${text}` }] }],
       config: {
         responseModalities: [Modality.AUDIO],
         speechConfig: {
@@ -123,6 +117,7 @@ export const decodeBase64Audio = (base64: string) => {
   return bytes;
 };
 
+// Implement audio decoding as per Gemini API raw PCM streaming requirements
 export const decodeAudioData = async (
   data: Uint8Array,
   ctx: AudioContext,

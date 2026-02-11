@@ -13,6 +13,18 @@ import {
 } from 'lucide-react';
 import { fetchSongFromAI, explainVerse } from './services/geminiService';
 
+// Moved NavButton component above App to satisfy "used before declaration" constraint
+const NavButton: React.FC<{ active: boolean; onClick: () => void; icon: React.ReactNode; label: string; activeTheme: Theme }> = ({ active, onClick, icon, label, activeTheme }) => (
+  <button onClick={onClick} className={`flex flex-col items-center gap-1.5 transition-all duration-300 ${active ? 'scale-110' : 'opacity-60 hover:opacity-100'}`}>
+     <div className={`p-3 rounded-2xl transition-all ${active ? 'bg-indigo-600 text-white shadow-xl shadow-indigo-200' : (activeTheme === Theme.Dark ? 'text-slate-400' : 'text-slate-600')}`}>
+        {React.isValidElement(icon) ? React.cloneElement(icon as React.ReactElement<any>, { className: 'w-5 h-5' }) : icon}
+     </div>
+     <span className={`text-[10px] font-black uppercase tracking-widest ${active ? (activeTheme === Theme.Dark ? 'text-white' : 'text-indigo-600') : (activeTheme === Theme.Dark ? 'text-slate-400' : 'text-slate-500')}`}>
+       {label}
+     </span>
+  </button>
+);
+
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<AppTab>(AppTab.Library);
   const [selectedSong, setSelectedSong] = useState<Song | null>(null);
@@ -187,7 +199,7 @@ const App: React.FC = () => {
 
   const cardBgClasses = theme === Theme.Dark ? 'bg-slate-800 border-slate-700' : theme === Theme.Sepia ? 'bg-[#e9dfc4] border-[#dcd0b3]' : 'bg-white border-slate-100';
   const textTitleClasses = theme === Theme.Dark ? 'text-white' : theme === Theme.Sepia ? 'text-[#433422]' : 'text-slate-900';
-  const textMutedClasses = theme === Theme.Dark ? 'text-slate-400' : theme === Theme.Sepia ? 'text-[#8b6d4d]' : 'text-slate-500';
+  const textMutedClasses = theme === Theme.Dark ? 'text-slate-300' : theme === Theme.Sepia ? 'text-[#8b6d4d]' : 'text-slate-500';
 
   if (selectedSong && activeTab === AppTab.Reader) {
     return (
@@ -207,22 +219,34 @@ const App: React.FC = () => {
       {/* Desktop Navigation Header */}
       <header className={`fixed top-0 left-0 right-0 z-50 h-16 border-b backdrop-blur-xl transition-all ${theme === Theme.Dark ? 'bg-slate-900/80 border-slate-800' : 'bg-white/80 border-slate-200 shadow-sm'}`}>
         <div className="max-w-6xl mx-auto px-6 h-full flex items-center justify-between">
-           <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-200">
-                <Music className="w-6 h-6" />
-              </div>
+           <div className="flex items-center">
               <h1 className="text-xl font-black tracking-tighter hidden sm:block">Sacred Melodies</h1>
            </div>
 
-           <nav className="hidden md:flex items-center gap-1 bg-slate-100/50 dark:bg-slate-800/50 p-1 rounded-xl">
-              <button onClick={() => setActiveTab(AppTab.Library)} className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === AppTab.Library ? 'bg-white dark:bg-slate-700 shadow-sm' : 'opacity-50'}`}>LIBRARY</button>
-              <button onClick={() => setActiveTab(AppTab.Study)} className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === AppTab.Study ? 'bg-white dark:bg-slate-700 shadow-sm' : 'opacity-50'}`}>STUDY</button>
-              <button onClick={() => setActiveTab(AppTab.Reflections)} className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === AppTab.Reflections ? 'bg-white dark:bg-slate-700 shadow-sm' : 'opacity-50'}`}>SAVED</button>
+           <nav className="hidden md:flex items-center gap-1 bg-slate-100/50 dark:bg-slate-800 p-1 rounded-xl">
+              <button 
+                onClick={() => setActiveTab(AppTab.Library)} 
+                className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === AppTab.Library ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-white shadow-sm' : 'text-slate-500 dark:text-slate-400 opacity-80 hover:opacity-100'}`}
+              >
+                LIBRARY
+              </button>
+              <button 
+                onClick={() => setActiveTab(AppTab.Study)} 
+                className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === AppTab.Study ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-white shadow-sm' : 'text-slate-500 dark:text-slate-400 opacity-80 hover:opacity-100'}`}
+              >
+                STUDY
+              </button>
+              <button 
+                onClick={() => setActiveTab(AppTab.Reflections)} 
+                className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === AppTab.Reflections ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-white shadow-sm' : 'text-slate-500 dark:text-slate-400 opacity-80 hover:opacity-100'}`}
+              >
+                SAVED
+              </button>
            </nav>
            
            <div className="flex items-center gap-3">
               <button onClick={() => setTheme(theme === Theme.Dark ? Theme.Light : Theme.Dark)} className={`p-2.5 rounded-xl border transition-all hover:scale-105 active:scale-95 ${cardBgClasses}`}>
-                {theme === Theme.Dark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+                {theme === Theme.Dark ? <Sun className="w-5 h-5 text-amber-400" /> : <Moon className="w-5 h-5 text-indigo-600" />}
               </button>
               <button onClick={() => setActiveTab(AppTab.Profile)} className={`w-10 h-10 rounded-full border overflow-hidden p-0.5 hover:ring-4 transition-all ${cardBgClasses} ${theme === Theme.Dark ? 'ring-slate-700' : 'ring-indigo-50'}`}>
                  {user ? <img src={user.photo} alt="User" className="w-full h-full object-cover rounded-full" /> : <UserCircle className="w-6 h-6 m-auto opacity-30" />}
@@ -237,8 +261,8 @@ const App: React.FC = () => {
             <div className="space-y-10">
               <div className="flex flex-col md:flex-row justify-between items-end gap-6">
                 <div className="max-w-xl text-center md:text-left">
-                  <h2 className="text-4xl md:text-6xl font-black tracking-tighter mb-4 leading-none">Holy Melodies</h2>
-                  <p className="text-lg opacity-60 font-medium leading-relaxed">সঙ্গীতের মাধ্যমে ঈশ্বরের আরাধনা এবং আত্মিক শান্তি খুঁজুন।</p>
+                  <h2 className="text-4xl md:text-6xl font-black tracking-tighter mb-4 leading-none">Sacred Melodies</h2>
+                  <p className="text-lg opacity-80 font-medium leading-relaxed">সঙ্গীতের মাধ্যমে ঈশ্বরের আরাধনা এবং আত্মিক শান্তি খুঁজুন।</p>
                 </div>
                 
                 <div className="w-full md:w-auto flex flex-wrap justify-center gap-2">
@@ -246,7 +270,7 @@ const App: React.FC = () => {
                     <button 
                       key={cat}
                       onClick={() => setActiveCategory(cat)}
-                      className={`px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all border ${activeCategory === cat ? 'bg-indigo-600 border-indigo-600 text-white shadow-xl shadow-indigo-200 scale-105' : cardBgClasses + ' opacity-60 hover:opacity-100'}`}
+                      className={`px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all border ${activeCategory === cat ? 'bg-indigo-600 border-indigo-600 text-white shadow-xl shadow-indigo-200 scale-105' : cardBgClasses + ' opacity-80 hover:opacity-100'}`}
                     >
                       {cat}
                     </button>
@@ -257,7 +281,7 @@ const App: React.FC = () => {
               <div className="space-y-3 max-w-2xl mx-auto md:mx-0">
                 <div className="relative flex items-center group">
                    <div className="absolute left-5 top-1/2 -translate-y-1/2 flex items-center gap-2">
-                     {isSearchingAI ? <Loader2 className="w-5 h-5 animate-spin text-indigo-500" /> : <Search className="w-5 h-5 opacity-30 group-focus-within:opacity-100 transition-opacity" />}
+                     {isSearchingAI ? <Loader2 className="w-5 h-5 animate-spin text-indigo-500" /> : <Search className="w-5 h-5 opacity-40 group-focus-within:opacity-100 transition-opacity" />}
                    </div>
                    <input 
                       type="text" 
@@ -268,15 +292,17 @@ const App: React.FC = () => {
                         if (searchError) setSearchError(null);
                       }}
                       onKeyDown={(e) => e.key === 'Enter' && handleAISearch()}
-                      className={`w-full py-5 pl-14 pr-32 rounded-[2rem] border text-lg focus:ring-8 transition-all shadow-sm ${theme === Theme.Dark ? 'bg-slate-800 border-slate-700 text-white focus:ring-indigo-900/20' : 'bg-white border-slate-200 focus:ring-indigo-50'}`}
+                      className={`w-full py-5 pl-14 pr-32 rounded-[2rem] border text-lg transition-all shadow-sm animate-focus-glow ${theme === Theme.Dark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-slate-200'}`}
                    />
-                   <button 
-                      onClick={handleAISearch}
-                      disabled={isSearchingAI || !searchQuery.trim()}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 bg-indigo-600 text-white px-5 py-2.5 rounded-full text-xs font-black flex items-center gap-2 hover:bg-indigo-700 active:scale-95 transition-all disabled:opacity-50 disabled:pointer-events-none shadow-lg shadow-indigo-200"
-                   >
-                      {isSearchingAI ? "FINDING..." : <><Wand2 className="w-4 h-4" /> AI SEARCH</>}
-                   </button>
+                   <div className="absolute right-2 top-1/2 -translate-y-1/2">
+                     <button 
+                        onClick={handleAISearch}
+                        disabled={isSearchingAI || !searchQuery.trim()}
+                        className="bg-indigo-600 text-white px-5 py-2.5 rounded-full text-[10px] font-black flex items-center gap-2 hover:bg-indigo-700 active:scale-95 transition-all disabled:opacity-50 disabled:pointer-events-none shadow-lg shadow-indigo-200"
+                     >
+                        {isSearchingAI ? "FINDING..." : <><Wand2 className="w-4 h-4" /> AI SEARCH</>}
+                     </button>
+                   </div>
                 </div>
                 {searchError && (
                   <div className="flex items-center gap-2 px-6 text-rose-500 text-sm font-medium animate-bounce">
@@ -302,7 +328,7 @@ const App: React.FC = () => {
                    </div>
                    <div className="space-y-2">
                      <h2 className="text-4xl md:text-5xl font-black tracking-tight">Bible Discovery</h2>
-                     <p className="opacity-60 text-lg md:text-xl font-medium">যেকোনো পদের ব্যাখ্যা জানতে নিচের বক্সে সার্চ করুন।</p>
+                     <p className="opacity-80 text-lg md:text-xl font-medium">যেকোনো পদের ব্যাখ্যা জানতে নিচের বক্সে সার্চ করুন।</p>
                    </div>
                 </div>
                 
@@ -359,7 +385,7 @@ const App: React.FC = () => {
              <div className="space-y-12">
                 <div className="text-center md:text-left">
                   <h2 className="text-5xl font-black tracking-tighter mb-4 leading-none">Your Library</h2>
-                  <p className="text-lg opacity-60 font-medium">আপনার প্রিয় গান এবং স্টাডি নোটগুলি এখানে সংরক্ষিত আছে।</p>
+                  <p className="text-lg opacity-80 font-medium">আপনার প্রিয় গান এবং স্টাডি নোটগুলি এখানে সংরক্ষিত আছে।</p>
                 </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -372,10 +398,12 @@ const App: React.FC = () => {
                              </div>
                              <div className="flex-1">
                                 <h3 className={`text-xl font-black ${textTitleClasses}`}>{song.title}</h3>
-                                <p className={`opacity-50 italic text-sm ${textMutedClasses}`}>{song.reference}</p>
+                                <p className={`opacity-60 italic text-sm ${textMutedClasses}`}>{song.reference}</p>
                                 <button onClick={() => {setSelectedSong(song); setActiveTab(AppTab.Reader);}} className="mt-3 text-indigo-500 font-bold text-xs uppercase tracking-widest flex items-center gap-1">Read Now <ChevronRight className="w-4 h-4" /></button>
                              </div>
-                             <button onClick={() => toggleFavorite(song.id)} className="p-3 bg-rose-50 text-rose-500 rounded-2xl shrink-0"><Trash2 className="w-5 h-5" /></button>
+                             <div className="flex flex-col gap-2">
+                                <button onClick={() => toggleFavorite(song.id)} className="p-3 bg-rose-100 dark:bg-rose-900/30 text-rose-500 rounded-2xl shrink-0 hover:scale-110 transition-all"><Trash2 className="w-5 h-5" /></button>
+                             </div>
                           </div>
                         ))}
                         
@@ -386,9 +414,9 @@ const App: React.FC = () => {
                                    <div className={`p-3 rounded-xl ${theme === Theme.Dark ? 'bg-indigo-900/40 text-indigo-400' : 'bg-indigo-50 text-indigo-600'}`}><Bookmark className="w-5 h-5" /></div>
                                    <h3 className={`text-xl font-black tracking-tight ${textTitleClasses}`}>{study.reference}</h3>
                                 </div>
-                                <button onClick={() => deleteSavedStudy(study.id)} className="p-3 text-rose-500 hover:bg-rose-50 rounded-xl transition-colors"><Trash2 className="w-5 h-5" /></button>
+                                <button onClick={() => deleteSavedStudy(study.id)} className="p-3 text-rose-500 hover:bg-rose-100 dark:hover:bg-rose-900/40 rounded-xl transition-colors"><Trash2 className="w-5 h-5" /></button>
                              </div>
-                             <p className={`text-sm line-clamp-3 font-serif leading-relaxed italic ${theme === Theme.Dark ? 'text-slate-300' : 'opacity-60 text-slate-600'}`}>
+                             <p className={`text-sm line-clamp-3 font-serif leading-relaxed italic ${theme === Theme.Dark ? 'text-slate-300' : 'opacity-70 text-slate-600'}`}>
                                {study.content}
                              </p>
                              <button 
@@ -405,7 +433,7 @@ const App: React.FC = () => {
                         ))}
                       </>
                    ) : (
-                      <div className="col-span-full py-20 text-center opacity-30">
+                      <div className="col-span-full py-20 text-center opacity-40">
                          <CloudOff className="w-16 h-16 mx-auto mb-4" />
                          <p className="text-xl font-bold">No saved items found.</p>
                       </div>
@@ -429,7 +457,7 @@ const App: React.FC = () => {
                          </div>
                          <div>
                            <h2 className={`text-4xl font-black tracking-tight ${textTitleClasses}`}>{user.name}</h2>
-                           <p className={`opacity-50 font-bold uppercase tracking-[0.2em] text-xs mt-3 ${textMutedClasses}`}>{user.email}</p>
+                           <p className={`opacity-60 font-bold uppercase tracking-[0.2em] text-xs mt-3 ${textMutedClasses}`}>{user.email}</p>
                          </div>
                       </div>
 
@@ -438,19 +466,19 @@ const App: React.FC = () => {
                             <div className={`p-8 rounded-[3rem] border shadow-sm flex flex-col items-center justify-center gap-2 ${cardBgClasses}`}>
                                <Heart className="w-8 h-8 text-rose-500 mb-2" />
                                <p className={`text-4xl font-black ${textTitleClasses}`}>{favorites.length}</p>
-                               <p className="text-xs font-black opacity-30 uppercase tracking-widest">Favorite Songs</p>
+                               <p className="text-xs font-black opacity-40 uppercase tracking-widest">Favorite Songs</p>
                             </div>
                             <div className={`p-8 rounded-[3rem] border shadow-sm flex flex-col items-center justify-center gap-2 ${cardBgClasses}`}>
                                <Bookmark className="w-8 h-8 text-amber-500 mb-2" />
                                <p className={`text-4xl font-black ${textTitleClasses}`}>{savedStudies.length}</p>
-                               <p className="text-xs font-black opacity-30 uppercase tracking-widest">Insights</p>
+                               <p className="text-xs font-black opacity-40 uppercase tracking-widest">Insights</p>
                             </div>
                          </div>
 
                          <div className="space-y-4">
                             <button onClick={() => setActiveTab(AppTab.Developer)} className={`w-full p-8 rounded-[3rem] border font-bold flex items-center justify-between group transition-all hover:scale-[1.01] hover:shadow-xl ${cardBgClasses}`}>
                                <span className={`flex items-center gap-5 text-lg font-black ${textTitleClasses}`}><Code2 className="w-8 h-8 text-indigo-500" /> Developer Profile</span>
-                               <ChevronRight className="w-6 h-6 opacity-30 group-hover:opacity-100 group-hover:translate-x-2 transition-all" />
+                               <ChevronRight className="w-6 h-6 opacity-40 group-hover:opacity-100 group-hover:translate-x-2 transition-all" />
                             </button>
                             <button onClick={handleLogout} className="w-full p-8 bg-rose-50 dark:bg-rose-900/20 text-rose-600 rounded-[3rem] font-black uppercase tracking-widest text-xs flex items-center justify-center gap-3 hover:bg-rose-100 transition-all">
                                <LogOut className="w-6 h-6" /> Sign Out from Account
@@ -466,7 +494,7 @@ const App: React.FC = () => {
                       </div>
                       <div className="space-y-2">
                         <h2 className={`text-4xl font-black tracking-tight ${textTitleClasses}`}>Join Sacred Melodies</h2>
-                        <p className={`opacity-60 text-lg font-medium leading-relaxed ${textMutedClasses}`}>লগইন করুন আপনার প্রিয় গান এবং স্টাডি নোটগুলি সব ডিভাইসে সিনক্রোনাইজ করতে।</p>
+                        <p className={`opacity-80 text-lg font-medium leading-relaxed ${textMutedClasses}`}>লগইন করুন আপনার প্রিয় গান এবং স্টাডি নোটগুলি সব ডিভাইসে সিনক্রোনাইজ করতে।</p>
                       </div>
                     </div>
 
@@ -491,7 +519,7 @@ const App: React.FC = () => {
                     </div>
 
                     <div className="pt-8 border-t border-slate-100 dark:border-slate-800">
-                      <button onClick={() => setActiveTab(AppTab.Developer)} className="text-xs font-black opacity-30 uppercase tracking-[0.2em] hover:opacity-100 transition-opacity">Meet the Developer</button>
+                      <button onClick={() => setActiveTab(AppTab.Developer)} className="text-xs font-black opacity-40 uppercase tracking-[0.2em] hover:opacity-100 transition-opacity">Meet the Developer</button>
                     </div>
                   </div>
                 )}
@@ -500,7 +528,7 @@ const App: React.FC = () => {
 
           {activeTab === AppTab.Developer && (
             <div className="max-w-2xl mx-auto py-12">
-               <button onClick={() => setActiveTab(AppTab.Profile)} className="flex items-center gap-2 mb-10 font-black text-xs uppercase tracking-widest opacity-40 hover:opacity-100 transition-opacity">
+               <button onClick={() => setActiveTab(AppTab.Profile)} className="flex items-center gap-2 mb-10 font-black text-xs uppercase tracking-widest opacity-60 hover:opacity-100 transition-opacity">
                  <ChevronLeft className="w-5 h-5" /> Back to Profile
                </button>
                <div className={`p-10 md:p-16 rounded-[4rem] border shadow-2xl relative overflow-hidden transition-all hover:shadow-indigo-100/20 ${cardBgClasses}`}>
@@ -542,23 +570,14 @@ const App: React.FC = () => {
 
       <nav className={`md:hidden fixed bottom-0 left-0 right-0 z-50 py-4 px-6 border-t backdrop-blur-xl transition-all ${theme === Theme.Dark ? 'bg-slate-900/95 border-slate-800' : 'bg-white/95 border-slate-100 shadow-[0_-10px_40px_rgba(0,0,0,0.03)]'}`}>
         <div className="max-w-lg mx-auto flex justify-between items-center">
-           <NavButton active={activeTab === AppTab.Library} onClick={() => setActiveTab(AppTab.Library)} icon={<Music />} label="Library" />
-           <NavButton active={activeTab === AppTab.Study} onClick={() => setActiveTab(AppTab.Study)} icon={<BookOpen />} label="Study" />
-           <NavButton active={activeTab === AppTab.Reflections} onClick={() => setActiveTab(AppTab.Reflections)} icon={<Heart />} label="Saved" />
-           <NavButton active={activeTab === AppTab.Profile || activeTab === AppTab.Developer} onClick={() => setActiveTab(AppTab.Profile)} icon={user ? <img src={user.photo} className="w-5 h-5 rounded-full" /> : <UserCircle />} label="Account" />
+           <NavButton active={activeTab === AppTab.Library} onClick={() => setActiveTab(AppTab.Library)} icon={<Music />} label="Library" activeTheme={theme} />
+           <NavButton active={activeTab === AppTab.Study} onClick={() => setActiveTab(AppTab.Study)} icon={<BookOpen />} label="Study" activeTheme={theme} />
+           <NavButton active={activeTab === AppTab.Reflections} onClick={() => setActiveTab(AppTab.Reflections)} icon={<Heart />} label="Saved" activeTheme={theme} />
+           <NavButton active={activeTab === AppTab.Profile || activeTab === AppTab.Developer} onClick={() => setActiveTab(AppTab.Profile)} icon={user ? <img src={user.photo} className="w-5 h-5 rounded-full" /> : <UserCircle />} label="Account" activeTheme={theme} />
         </div>
       </nav>
     </div>
   );
 };
-
-const NavButton: React.FC<{ active: boolean; onClick: () => void; icon: React.ReactNode; label: string }> = ({ active, onClick, icon, label }) => (
-  <button onClick={onClick} className={`flex flex-col items-center gap-1.5 transition-all duration-300 ${active ? 'scale-110' : 'opacity-40 hover:opacity-70'}`}>
-     <div className={`p-3 rounded-2xl transition-all ${active ? 'bg-indigo-600 text-white shadow-xl shadow-indigo-200' : ''}`}>
-        {React.isValidElement(icon) ? React.cloneElement(icon as React.ReactElement<any>, { className: 'w-5 h-5' }) : icon}
-     </div>
-     <span className="text-[10px] font-black uppercase tracking-widest">{label}</span>
-  </button>
-);
 
 export default App;
