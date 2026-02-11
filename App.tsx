@@ -558,7 +558,7 @@ const App: React.FC = () => {
                      <div className="relative mb-8">
                         <div className="absolute inset-0 bg-indigo-500/20 blur-2xl rounded-full scale-110" />
                         <div className="w-48 h-48 md:w-56 md:h-56 rounded-[3.5rem] md:rounded-[4.5rem] p-1.5 bg-gradient-to-tr from-indigo-600 via-purple-500 to-indigo-400 shadow-2xl overflow-hidden relative">
-                           <img src="https://media.licdn.com/dms/image/v2/C4D03AQH4u2X5M9E83w/profile-displayphoto-shrink_800_800/profile-displayphoto-shrink_800_800/0/1654512403714?e=1746662400&v=beta&t=90Gz0p-C3p-kPIdmK940L638G5XqIeXvYIq40Uq4-uU" 
+                           <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=800" 
                                 className="w-full h-full object-cover rounded-[3rem] md:rounded-[4rem]" 
                                 alt="Sobuj Biswas" />
                         </div>
@@ -568,7 +568,7 @@ const App: React.FC = () => {
                      </div>
 
                      {/* Info Section */}
-                     <div className="space-y-4 max-w-lg mb-10">
+                     <div className="space-y-4 max-w-lg mb-12">
                         <h2 className={`text-3xl md:text-5xl font-black tracking-tighter leading-tight ${textTitleClasses}`}>
                           SOBUJ THEOTONIUS BISWAS
                         </h2>
@@ -577,27 +577,11 @@ const App: React.FC = () => {
                            <span className="px-4 py-1.5 rounded-full bg-purple-600/10 border border-purple-600/20 text-purple-600 dark:text-purple-400 text-[10px] font-black uppercase tracking-widest">AI Expert</span>
                            <span className="px-4 py-1.5 rounded-full bg-emerald-600/10 border border-emerald-600/20 text-emerald-600 dark:text-emerald-400 text-[10px] font-black uppercase tracking-widest">React Enthusiast</span>
                         </div>
-                        <p className={`text-sm md:text-lg font-medium opacity-60 px-4 ${textMutedClasses}`}>
+                        <p className={`text-sm md:text-lg font-medium opacity-60 px-4 mt-6 ${textMutedClasses}`}>
                           Crafting meaningful digital experiences through clean code and spiritual mindfulness.
                         </p>
                      </div>
 
-                     {/* Mobile Optimized Expertise Grid */}
-                     <div className="w-full grid grid-cols-3 gap-3 mb-10">
-                        <div className={`p-4 rounded-3xl border flex flex-col items-center gap-2 ${theme === Theme.Dark ? 'bg-slate-900/40' : 'bg-slate-50'}`}>
-                           <Cpu className="w-6 h-6 text-indigo-500" />
-                           <span className="text-[10px] font-black uppercase opacity-60">AI Dev</span>
-                        </div>
-                        <div className={`p-4 rounded-3xl border flex flex-col items-center gap-2 ${theme === Theme.Dark ? 'bg-slate-900/40' : 'bg-slate-50'}`}>
-                           <Layers className="w-6 h-6 text-purple-500" />
-                           <span className="text-[10px] font-black uppercase opacity-60">Architecture</span>
-                        </div>
-                        <div className={`p-4 rounded-3xl border flex flex-col items-center gap-2 ${theme === Theme.Dark ? 'bg-slate-900/40' : 'bg-slate-50'}`}>
-                           <Zap className="w-6 h-6 text-amber-500" />
-                           <span className="text-[10px] font-black uppercase opacity-60">Performance</span>
-                        </div>
-                     </div>
-                     
                      {/* Premium Contact Hub */}
                      <div className="w-full space-y-6">
                         <a href="tel:+8801614802711" 
@@ -629,7 +613,7 @@ const App: React.FC = () => {
                               className={`p-5 rounded-[2rem] border flex items-center justify-center transition-all hover:bg-rose-500 hover:text-white hover:scale-110 active:scale-90 ${cardBgClasses}`}>
                               <Mail className="w-6 h-6" />
                            </a>
-                           <a href="https://theotonius.com" target="_blank" rel="noreferrer"
+                           <a href="#" target="_blank" rel="noreferrer"
                               className={`p-5 rounded-[2rem] border flex items-center justify-center transition-all hover:bg-emerald-500 hover:text-white hover:scale-110 active:scale-90 ${cardBgClasses}`}>
                               <Globe className="w-6 h-6" />
                            </a>
