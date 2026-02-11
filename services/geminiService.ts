@@ -2,8 +2,12 @@
 import { GoogleGenAI, Modality, Type } from "@google/genai";
 
 const getAI = () => {
-  // Fix: Direct use of process.env.API_KEY for initializing GoogleGenAI as per guidelines
-  return new GoogleGenAI({ apiKey: process.env.API_KEY });
+  // Vercel বা অন্যান্য পরিবেশে অনেক সময় API_KEY বা GEMINI_API_KEY নামে সেভ থাকে
+  const key = process.env.API_KEY || (process.env as any).GEMINI_API_KEY;
+  if (!key) {
+    console.error("API Key is missing! Please set API_KEY in your environment variables.");
+  }
+  return new GoogleGenAI({ apiKey: key || "" });
 };
 
 // সাময়িক সার্ভার সমস্যা এড়াতে Retry Logic
@@ -32,7 +36,7 @@ export const generateReflection = async (songTitle: string, lyrics: string[]) =>
     return response.text;
   }).catch(error => {
     console.error("Reflection Error:", error);
-    return "এখন ব্যাখ্যা তৈরি করা যাচ্ছে না।";
+    return "এখন ব্যাখ্যা তৈরি করা যাচ্ছে না। অনুগ্রহ করে পরে চেষ্টা করুন।";
   });
 };
 
@@ -51,7 +55,7 @@ export const explainVerse = async (verseReference: string) => {
     return response.text;
   }).catch(error => {
     console.error("Explanation Error:", error);
-    return "দুঃখিত, এই পদের ব্যাখ্যা খুঁজে পাওয়া যাচ্ছে না। অনুগ্রহ করে নেটওয়ার্ক চেক করে আবার চেষ্টা করুন।";
+    return "দুঃখিত, এই পদের ব্যাখ্যা খুঁজে পাওয়া যাচ্ছে না। অনুগ্রহ করে নেটওয়ার্ক এবং API Key চেক করে আবার চেষ্টা করুন।";
   });
 };
 
@@ -60,7 +64,7 @@ export const fetchSongFromAI = async (query: string) => {
     const ai = getAI();
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
-      contents: `Find the lyrics for the Bible song or hymn: "${query}". Return the title, primary Bible reference, category, and lyrics as a list of lines.`,
+      contents: `Find the lyrics for the Bible song or hymn: "${query}". Return the title, primary Bible reference, category, and lyrics as a list of lines. Return as JSON.`,
       config: {
         responseMimeType: "application/json",
         responseSchema: {
@@ -75,36 +79,10 @@ export const fetchSongFromAI = async (query: string) => {
         }
       }
     });
-    return JSON.parse(response.text || '{}');
+    const text = response.text?.trim() || '{}';
+    return JSON.parse(text);
   }).catch(error => {
     console.error("Fetch Song Error:", error);
-    return null;
-  });
-};
-
-export const composeNewSong = async (theme: string) => {
-  return withRetry(async () => {
-    const ai = getAI();
-    const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
-      contents: `Compose a new Bible song or hymn based on the theme: "${theme}". Include a title, a relevant Bible reference, and lyrics structured in verses.`,
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            title: { type: Type.STRING },
-            reference: { type: Type.STRING },
-            category: { type: Type.STRING, enum: ['Worship', 'Praise', 'Hymn', 'Kids'] },
-            lyrics: { type: Type.ARRAY, items: { type: Type.STRING } }
-          },
-          required: ["title", "reference", "category", "lyrics"]
-        }
-      }
-    });
-    return JSON.parse(response.text || '{}');
-  }).catch(error => {
-    console.error("Compose Song Error:", error);
     return null;
   });
 };
@@ -112,7 +90,6 @@ export const composeNewSong = async (theme: string) => {
 export const speakLyrics = async (text: string) => {
   return withRetry(async () => {
     const ai = getAI();
-    // Fix: Simplified contents format to simple string as per guidelines
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash-preview-tts",
       contents: `Read these lyrics warmly: ${text}`,
@@ -127,7 +104,7 @@ export const speakLyrics = async (text: string) => {
     });
 
     const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
-    if (!base64Audio) throw new Error("No audio data");
+    if (!base64Audio) throw new Error("No audio data returned from API");
     
     return base64Audio;
   }).catch(error => {

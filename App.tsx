@@ -8,7 +8,7 @@ import {
   Music, Search, Heart, User, Sparkles, Loader2, BookOpen, LogOut, 
   ShieldCheck, Facebook, Share2, Check, Bookmark, Trash2, 
   ChevronLeft, ChevronRight, CloudOff, X, Moon, Sun, Coffee, 
-  Code2, Github, Globe, Linkedin, Mail, Smartphone, Award, Laptop, Wand2
+  Code2, Github, Globe, Linkedin, Mail, Smartphone, Award, Laptop, Wand2, AlertCircle
 } from 'lucide-react';
 import { fetchSongFromAI, explainVerse } from './services/geminiService';
 
@@ -48,6 +48,7 @@ const App: React.FC = () => {
   const [isSearchingAI, setIsSearchingAI] = useState(false);
   const [isExplaining, setIsExplaining] = useState(false);
   const [verseExplanation, setVerseExplanation] = useState<string | null>(null);
+  const [searchError, setSearchError] = useState<string | null>(null);
 
   useEffect(() => {
     localStorage.setItem('sm_favorites', JSON.stringify(favorites));
@@ -77,10 +78,17 @@ const App: React.FC = () => {
     setFavorites(prev => prev.includes(id) ? prev.filter(fid => fid !== id) : [...prev, id]);
   };
 
-  // AI Search Function - FIXED
   const handleAISearch = async () => {
     if (!searchQuery.trim()) return;
+    
+    // API Key চেক
+    if (!process.env.API_KEY && !(process.env as any).GEMINI_API_KEY) {
+      setSearchError("API Key পাওয়া যায়নি। Vercel Settings-এ API_KEY সেট করুন।");
+      return;
+    }
+
     setIsSearchingAI(true);
+    setSearchError(null);
     try {
       const result = await fetchSongFromAI(searchQuery);
       if (result && result.title && result.lyrics) {
@@ -91,11 +99,13 @@ const App: React.FC = () => {
         };
         setSelectedSong(newSong);
         setActiveTab(AppTab.Reader);
+        setSearchQuery(''); // সার্চ সফল হলে টেক্সট ক্লিয়ার করুন
       } else {
-        alert("দুঃখিত, এই গানটি খুঁজে পাওয়া যায়নি। অন্য কিছু লিখে চেষ্টা করুন।");
+        setSearchError("দুঃখিত, এই গানটি খুঁজে পাওয়া যায়নি। অন্য কিছু লিখে চেষ্টা করুন।");
       }
     } catch (error) {
       console.error("AI Search Failed:", error);
+      setSearchError("সার্ভার সমস্যা। দয়া করে আপনার ইন্টারনেট এবং API Key চেক করুন।");
     } finally {
       setIsSearchingAI(false);
     }
@@ -178,26 +188,37 @@ const App: React.FC = () => {
                 </div>
               </div>
 
-              {/* SEARCH BAR SECTION - IMPROVED */}
-              <div className="relative max-w-2xl mx-auto md:mx-0 flex items-center group">
-                 <div className="absolute left-5 top-1/2 -translate-y-1/2 flex items-center gap-2">
-                   {isSearchingAI ? <Loader2 className="w-5 h-5 animate-spin text-indigo-500" /> : <Search className="w-5 h-5 opacity-30 group-focus-within:opacity-100 transition-opacity" />}
-                 </div>
-                 <input 
-                    type="text" 
-                    placeholder="Search songs or ask AI to find any hymn..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleAISearch()}
-                    className={`w-full py-5 pl-14 pr-32 rounded-[2rem] border text-lg focus:ring-8 transition-all shadow-sm ${theme === Theme.Dark ? 'bg-slate-800 border-slate-700 text-white focus:ring-indigo-900/20' : 'bg-white border-slate-200 focus:ring-indigo-50'}`}
-                 />
-                 <button 
-                    onClick={handleAISearch}
-                    disabled={isSearchingAI || !searchQuery.trim()}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 bg-indigo-600 text-white px-5 py-2.5 rounded-full text-xs font-black flex items-center gap-2 hover:bg-indigo-700 active:scale-95 transition-all disabled:opacity-50 disabled:pointer-events-none shadow-lg shadow-indigo-200"
-                 >
-                    {isSearchingAI ? "FINDING..." : <><Wand2 className="w-4 h-4" /> AI SEARCH</>}
-                 </button>
+              {/* SEARCH BAR SECTION */}
+              <div className="space-y-3 max-w-2xl mx-auto md:mx-0">
+                <div className="relative flex items-center group">
+                   <div className="absolute left-5 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                     {isSearchingAI ? <Loader2 className="w-5 h-5 animate-spin text-indigo-500" /> : <Search className="w-5 h-5 opacity-30 group-focus-within:opacity-100 transition-opacity" />}
+                   </div>
+                   <input 
+                      type="text" 
+                      placeholder="Search songs or ask AI for any hymn..."
+                      value={searchQuery}
+                      onChange={(e) => {
+                        setSearchQuery(e.target.value);
+                        if (searchError) setSearchError(null);
+                      }}
+                      onKeyDown={(e) => e.key === 'Enter' && handleAISearch()}
+                      className={`w-full py-5 pl-14 pr-32 rounded-[2rem] border text-lg focus:ring-8 transition-all shadow-sm ${theme === Theme.Dark ? 'bg-slate-800 border-slate-700 text-white focus:ring-indigo-900/20' : 'bg-white border-slate-200 focus:ring-indigo-50'}`}
+                   />
+                   <button 
+                      onClick={handleAISearch}
+                      disabled={isSearchingAI || !searchQuery.trim()}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 bg-indigo-600 text-white px-5 py-2.5 rounded-full text-xs font-black flex items-center gap-2 hover:bg-indigo-700 active:scale-95 transition-all disabled:opacity-50 disabled:pointer-events-none shadow-lg shadow-indigo-200"
+                   >
+                      {isSearchingAI ? "FINDING..." : <><Wand2 className="w-4 h-4" /> AI SEARCH</>}
+                   </button>
+                </div>
+                {searchError && (
+                  <div className="flex items-center gap-2 px-6 text-rose-500 text-sm font-medium animate-bounce">
+                    <AlertCircle className="w-4 h-4" />
+                    {searchError}
+                  </div>
+                )}
               </div>
 
               {/* Grid System for Multi-Device */}
@@ -208,8 +229,8 @@ const App: React.FC = () => {
                 {filteredSongs.length === 0 && !isSearchingAI && (
                   <div className="col-span-full py-20 text-center space-y-4 opacity-40">
                     <CloudOff className="w-16 h-16 mx-auto" />
-                    <p className="text-xl font-bold">No songs found in local library.</p>
-                    <p className="text-sm">Press 'AI SEARCH' to let Gemini find it for you!</p>
+                    <p className="text-xl font-bold">No songs found locally.</p>
+                    <p className="text-sm">Try 'AI SEARCH' to find any Bible song online!</p>
                   </div>
                 )}
               </div>
