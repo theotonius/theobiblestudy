@@ -9,9 +9,9 @@ import {
   ShieldCheck, Facebook, Share2, Check, Bookmark, Trash2, 
   ChevronLeft, ChevronRight, CloudOff, X, Moon, Sun, Coffee, 
   Code2, Github, Globe, Linkedin, Mail, Smartphone, Award, Laptop, Wand2, AlertCircle,
-  LogIn, Chrome, Settings, UserCircle, Cpu, Layers, Zap, PhoneCall, Image as ImageIcon
+  LogIn, Chrome, Settings, UserCircle, Cpu, Layers, Zap, PhoneCall
 } from 'lucide-react';
-import { fetchSongFromAI, explainVerse, generateVerseImage } from './services/geminiService';
+import { fetchSongFromAI, explainVerse } from './services/geminiService';
 
 const NavButton: React.FC<{ active: boolean; onClick: () => void; icon: React.ReactNode; label: string; activeTheme: Theme }> = ({ active, onClick, icon, label, activeTheme }) => (
   <button onClick={onClick} className={`flex flex-col items-center gap-1.5 transition-all duration-300 ${active ? 'scale-110' : 'opacity-60 hover:opacity-100'}`}>
@@ -64,9 +64,7 @@ const App: React.FC = () => {
 
   const [isSearchingAI, setIsSearchingAI] = useState(false);
   const [isExplaining, setIsExplaining] = useState(false);
-  const [isGeneratingImage, setIsGeneratingImage] = useState(false);
   const [verseExplanation, setVerseExplanation] = useState<string | null>(null);
-  const [verseImage, setVerseImage] = useState<string | null>(null);
   const [searchError, setSearchError] = useState<string | null>(null);
   const [isStudySaved, setIsStudySaved] = useState(false);
   const [isStudyShared, setIsStudyShared] = useState(false);
@@ -134,22 +132,15 @@ const App: React.FC = () => {
     if (!studyQuery.trim()) return;
     setIsExplaining(true);
     setVerseExplanation(null);
-    setVerseImage(null);
     setIsStudySaved(false);
     
     try {
       const res = await explainVerse(studyQuery);
       setVerseExplanation(res);
-      
-      // Start generating image immediately after explanation starts showing
-      setIsGeneratingImage(true);
-      const imgRes = await generateVerseImage(studyQuery, res);
-      setVerseImage(imgRes);
     } catch (error) {
       console.error(error);
     } finally {
       setIsExplaining(false);
-      setIsGeneratingImage(false);
     }
   };
 
@@ -337,7 +328,7 @@ const App: React.FC = () => {
                    </div>
                    <div className="space-y-2">
                      <h2 className="text-4xl md:text-5xl font-black tracking-tight">Bible Discovery</h2>
-                     <p className="opacity-80 text-lg md:text-xl font-medium">যেকোনো পদের ব্যাখ্যা ও প্রেক্ষাপট অনুযায়ী ছবি দেখতে সার্চ করুন।</p>
+                     <p className="opacity-80 text-lg md:text-xl font-medium">যেকোনো পদের ব্যাখ্যা দেখতে সার্চ করুন।</p>
                    </div>
                 </div>
                 
@@ -359,35 +350,8 @@ const App: React.FC = () => {
                    </button>
                 </div>
 
-                {(verseExplanation || isGeneratingImage) && (
-                   <div className={`p-8 md:p-14 rounded-[3.5rem] border shadow-2xl font-serif leading-relaxed page-transition flex flex-col gap-10 ${cardBgClasses}`}>
-                      
-                      {/* AI Visual - The Contextual Image */}
-                      <div className="relative w-full aspect-video rounded-[2.5rem] overflow-hidden bg-slate-100 dark:bg-slate-900 shadow-inner group">
-                         {verseImage ? (
-                            <img src={verseImage} alt="Contextual Insight" className="w-full h-full object-cover transition-transform duration-[20s] hover:scale-110" />
-                         ) : (
-                            <div className="w-full h-full flex flex-col items-center justify-center gap-4 text-slate-400">
-                               {isGeneratingImage ? (
-                                  <>
-                                     <div className="relative">
-                                        <ImageIcon className="w-16 h-16 animate-pulse" />
-                                        <Sparkles className="absolute -top-2 -right-2 w-6 h-6 text-amber-500 animate-bounce" />
-                                     </div>
-                                     <p className="text-sm font-black uppercase tracking-[0.2em] animate-pulse">AI Visualizing Context...</p>
-                                  </>
-                               ) : (
-                                  <ImageIcon className="w-16 h-16 opacity-20" />
-                               )}
-                            </div>
-                         )}
-                         {verseImage && (
-                            <div className="absolute top-6 left-6 px-4 py-2 bg-black/40 backdrop-blur-md rounded-full border border-white/20 text-white text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
-                               <Sparkles className="w-3 h-3 text-amber-400" /> AI Visual Interpretation
-                            </div>
-                         )}
-                      </div>
-
+                {verseExplanation && (
+                   <div className={`p-8 md:p-14 rounded-[3.5rem] border shadow-2xl font-serif leading-relaxed page-transition flex flex-col gap-6 ${cardBgClasses}`}>
                       <div className={`whitespace-pre-wrap text-xl md:text-2xl ${theme === Theme.Dark ? 'text-slate-100' : ''}`}>
                         {verseExplanation}
                       </div>

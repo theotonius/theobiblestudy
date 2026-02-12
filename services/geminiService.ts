@@ -51,32 +51,6 @@ export const explainVerse = async (verseReference: string) => {
   });
 };
 
-export const generateVerseImage = async (verseReference: string, explanation: string) => {
-  return withRetry(async () => {
-    const prompt = `Create a serene, high-quality, spiritual, and cinematic digital art representing the essence of the Bible verse: "${verseReference}". Themes: ${explanation.substring(0, 200)}. Style: Soft lighting, oil painting or realistic cinematic photography, no text in image.`;
-    
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash-image',
-      contents: { parts: [{ text: prompt }] },
-      config: {
-        imageConfig: {
-          aspectRatio: "16:9"
-        }
-      }
-    });
-
-    for (const part of response.candidates[0].content.parts) {
-      if (part.inlineData) {
-        return `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
-      }
-    }
-    return null;
-  }).catch(error => {
-    console.error("Image Generation Error:", error);
-    return null;
-  });
-};
-
 export const fetchSongFromAI = async (query: string) => {
   return withRetry(async () => {
     const response = await ai.models.generateContent({
