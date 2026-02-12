@@ -679,7 +679,7 @@ const App: React.FC = () => {
                         <LogIn className="w-12 h-12" />
                       </div>
                       <div className="space-y-2">
-                        <h2 className={`text-4xl font-black tracking-tight ${textTitleClasses}`}>সক্রেড মেলোডিজে যুক্ত হন</h2>
+                        <h2 className={`text-4xl font-black tracking-tight ${textTitleClasses}`}>Join Sacred Melodies</h2>
                         <p className={`opacity-80 text-lg font-medium leading-relaxed ${textMutedClasses}`}>লগইন করুন আপনার প্রিয় গান এবং স্টাডি নোটগুলি সব ডিভাইসে সিনক্রোনাইজ করতে।</p>
                       </div>
                     </div>
