@@ -11,7 +11,7 @@ import {
   Code2, Github, Globe, Linkedin, Mail, Smartphone, Award, Laptop, Wand2, AlertCircle,
   LogIn, Chrome, Settings, UserCircle, Cpu, Layers, Zap, PhoneCall
 } from 'lucide-react';
-import { fetchSongFromAI, explainVerse } from './services/geminiService';
+import { fetchSongFromAI, explainVerseStream } from './services/geminiService';
 
 const NavButton: React.FC<{ active: boolean; onClick: () => void; icon: React.ReactNode; label: string; activeTheme: Theme }> = ({ active, onClick, icon, label, activeTheme }) => (
   <button onClick={onClick} className={`flex flex-col items-center gap-1.5 transition-all duration-300 ${active ? 'scale-110' : 'opacity-60 hover:opacity-100'}`}>
@@ -131,14 +131,18 @@ const App: React.FC = () => {
   const handleStudySearch = async () => {
     if (!studyQuery.trim()) return;
     setIsExplaining(true);
-    setVerseExplanation(null);
+    setVerseExplanation(""); // Clear previous results immediately
     setIsStudySaved(false);
     
     try {
-      const res = await explainVerse(studyQuery);
-      setVerseExplanation(res);
+      await explainVerseStream(studyQuery, (chunk) => {
+        setVerseExplanation(chunk);
+        // Hide loader as soon as we get the first piece of text
+        if (isExplaining) setIsExplaining(false);
+      });
     } catch (error) {
       console.error(error);
+      setVerseExplanation("দুঃখিত, ব্যাখ্যা লোড করা সম্ভব হয়নি।");
     } finally {
       setIsExplaining(false);
     }
@@ -350,39 +354,41 @@ const App: React.FC = () => {
                    </button>
                 </div>
 
-                {verseExplanation && (
+                {(verseExplanation || isExplaining) && (
                    <div className={`p-8 md:p-14 rounded-[3.5rem] border shadow-2xl font-serif leading-relaxed page-transition flex flex-col gap-6 ${cardBgClasses}`}>
                       <div className={`whitespace-pre-wrap text-xl md:text-2xl ${theme === Theme.Dark ? 'text-slate-100' : ''}`}>
-                        {verseExplanation}
+                        {verseExplanation || (isExplaining && "ব্যাখ্যা তৈরি হচ্ছে...")}
                       </div>
                       
                       {/* Actions Footer */}
-                      <div className="flex flex-wrap items-center gap-4 pt-8 border-t border-slate-100 dark:border-slate-700/50">
-                         <button 
-                           onClick={handleSaveStudy}
-                           disabled={isStudySaved}
-                           className={`flex items-center gap-3 px-6 py-4 rounded-2xl border transition-all ${
-                             isStudySaved 
-                               ? 'bg-emerald-50 text-emerald-600 border-emerald-100 dark:bg-emerald-900/40 dark:text-emerald-400 dark:border-emerald-800' 
-                               : 'bg-slate-50 border-slate-200 text-slate-600 dark:bg-slate-900/60 dark:border-slate-500 dark:text-white hover:scale-105 active:scale-95'
-                           }`}
-                         >
-                           {isStudySaved ? <Check className="w-5 h-5" /> : <Bookmark className="w-5 h-5" />}
-                           <span className="text-xs font-black uppercase tracking-widest">{isStudySaved ? 'Saved to Library' : 'Save Study'}</span>
-                         </button>
+                      {!isExplaining && verseExplanation && (
+                        <div className="flex flex-wrap items-center gap-4 pt-8 border-t border-slate-100 dark:border-slate-700/50">
+                           <button 
+                             onClick={handleSaveStudy}
+                             disabled={isStudySaved}
+                             className={`flex items-center gap-3 px-6 py-4 rounded-2xl border transition-all ${
+                               isStudySaved 
+                                 ? 'bg-emerald-50 text-emerald-600 border-emerald-100 dark:bg-emerald-900/40 dark:text-emerald-400 dark:border-emerald-800' 
+                                 : 'bg-slate-50 border-slate-200 text-slate-600 dark:bg-slate-900/60 dark:border-slate-500 dark:text-white hover:scale-105 active:scale-95'
+                             }`}
+                           >
+                             {isStudySaved ? <Check className="w-5 h-5" /> : <Bookmark className="w-5 h-5" />}
+                             <span className="text-xs font-black uppercase tracking-widest">{isStudySaved ? 'Saved to Library' : 'Save Study'}</span>
+                           </button>
 
-                         <button 
-                           onClick={handleShareStudy}
-                           className={`flex items-center gap-3 px-6 py-4 rounded-2xl border transition-all hover:scale-105 active:scale-95 ${
-                             theme === Theme.Dark 
-                               ? 'bg-slate-900/60 border-slate-500 text-white hover:bg-slate-800' 
-                               : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
-                           }`}
-                         >
-                           {isStudyShared ? <Check className="w-5 h-5 text-emerald-500" /> : <Share2 className="w-5 h-5" />}
-                           <span className="text-xs font-black uppercase tracking-widest">Share Insight</span>
-                         </button>
-                      </div>
+                           <button 
+                             onClick={handleShareStudy}
+                             className={`flex items-center gap-3 px-6 py-4 rounded-2xl border transition-all hover:scale-105 active:scale-95 ${
+                               theme === Theme.Dark 
+                                 ? 'bg-slate-900/60 border-slate-500 text-white hover:bg-slate-800' 
+                                 : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
+                             }`}
+                           >
+                             {isStudyShared ? <Check className="w-5 h-5 text-emerald-500" /> : <Share2 className="w-5 h-5" />}
+                             <span className="text-xs font-black uppercase tracking-widest">Share Insight</span>
+                           </button>
+                        </div>
+                      )}
                    </div>
                 )}
              </div>

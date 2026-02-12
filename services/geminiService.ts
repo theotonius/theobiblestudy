@@ -33,22 +33,32 @@ export const generateReflection = async (songTitle: string, lyrics: string[]) =>
   });
 };
 
-export const explainVerse = async (verseReference: string) => {
-  return withRetry(async () => {
-    const prompt = `Explain the Bible verse "${verseReference}" in Bengali. Provide: 1. The verse itself. 2. Historical/Spiritual Context. 3. Detailed Meaning. 4. Life Application. Format as clear sections.`;
+export const explainVerseStream = async (verseReference: string, onChunk: (text: string) => void) => {
+  try {
+    const prompt = `Explain the Bible verse "${verseReference}" in Bengali. Provide: 1. The verse. 2. Context. 3. Meaning. 4. Life Application. Be concise and spiritual.`;
     
-    const response = await ai.models.generateContent({
+    const response = await ai.models.generateContentStream({
       model: 'gemini-3-flash-preview',
       contents: prompt,
       config: {
-        systemInstruction: "You are an expert biblical scholar and theologian. Your goal is to explain Bible verses in a clear, deep, and spiritually enriching way in Bengali."
+        systemInstruction: "You are an expert biblical scholar. Explain Bible verses clearly and deeply in Bengali. Use streaming to provide immediate output.",
+        thinkingConfig: { thinkingBudget: 0 } // Disable deep thinking for maximum speed
       }
     });
-    return response.text;
-  }).catch(error => {
-    console.error("Explanation Error:", error);
-    return "দুঃখিত, এই পদের ব্যাখ্যা খুঁজে পাওয়া যাচ্ছে না। অনুগ্রহ করে নেটওয়ার্ক এবং API Key চেক করে আবার চেষ্টা করুন।";
-  });
+
+    let fullText = '';
+    for await (const chunk of response) {
+      const chunkText = chunk.text;
+      if (chunkText) {
+        fullText += chunkText;
+        onChunk(fullText);
+      }
+    }
+    return fullText;
+  } catch (error) {
+    console.error("Explanation Stream Error:", error);
+    throw error;
+  }
 };
 
 export const fetchSongFromAI = async (query: string) => {
