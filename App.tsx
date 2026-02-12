@@ -69,6 +69,7 @@ const App: React.FC = () => {
   const [isStudySaved, setIsStudySaved] = useState(false);
   const [isStudyShared, setIsStudyShared] = useState(false);
   const [isLoggingIn, setIsLoggingIn] = useState<'google' | 'facebook' | null>(null);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
   useEffect(() => {
     localStorage.setItem('sm_favorites', JSON.stringify(favorites));
@@ -77,6 +78,11 @@ const App: React.FC = () => {
     localStorage.setItem('sm_user', JSON.stringify(user));
     document.documentElement.className = theme;
   }, [favorites, savedStudies, theme, user]);
+
+  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3000);
+  };
 
   const allSongs = useMemo(() => BIBLE_SONGS, []);
 
@@ -96,11 +102,19 @@ const App: React.FC = () => {
   }, [searchQuery, allSongs, activeCategory]);
 
   const toggleFavorite = (id: string) => {
-    setFavorites(prev => prev.includes(id) ? prev.filter(fid => fid !== id) : [...prev, id]);
+    if (!user) {
+      showToast("দয়া করে গান সেভ করতে গুগল দিয়ে লগইন করুন।", "error");
+      setActiveTab(AppTab.Profile);
+      return;
+    }
+    const isFav = favorites.includes(id);
+    setFavorites(prev => isFav ? prev.filter(fid => fid !== id) : [...prev, id]);
+    showToast(isFav ? "লাইব্রেরি থেকে সরানো হয়েছে।" : "লাইব্রেরিতে যুক্ত করা হয়েছে।");
   };
 
   const deleteSavedStudy = (id: string) => {
     setSavedStudies(prev => prev.filter(s => s.id !== id));
+    showToast("স্টাডি নোটটি মুছে ফেলা হয়েছে।");
   };
 
   const handleAISearch = async () => {
@@ -131,13 +145,12 @@ const App: React.FC = () => {
   const handleStudySearch = async () => {
     if (!studyQuery.trim()) return;
     setIsExplaining(true);
-    setVerseExplanation(""); // Clear previous results immediately
+    setVerseExplanation(""); 
     setIsStudySaved(false);
     
     try {
       await explainVerseStream(studyQuery, (chunk) => {
         setVerseExplanation(chunk);
-        // Hide loader as soon as we get the first piece of text
         if (isExplaining) setIsExplaining(false);
       });
     } catch (error) {
@@ -149,6 +162,11 @@ const App: React.FC = () => {
   };
 
   const handleSaveStudy = () => {
+    if (!user) {
+      showToast("স্টাডি নোট সেভ করতে গুগল দিয়ে লগইন করুন।", "error");
+      setActiveTab(AppTab.Profile);
+      return;
+    }
     if (!verseExplanation || !studyQuery) return;
     const newStudy: SavedStudy = {
       id: `study-${Date.now()}`,
@@ -158,6 +176,7 @@ const App: React.FC = () => {
     };
     setSavedStudies(prev => [newStudy, ...prev]);
     setIsStudySaved(true);
+    showToast("স্টাডি নোটটি সেভ করা হয়েছে।");
   };
 
   const handleShareStudy = async () => {
@@ -169,6 +188,7 @@ const App: React.FC = () => {
       } else {
         await navigator.clipboard.writeText(shareText);
         setIsStudyShared(true);
+        showToast("ক্লিপবোর্ডে কপি করা হয়েছে।");
         setTimeout(() => setIsStudyShared(false), 2000);
       }
     } catch (err) { console.error("Error sharing study:", err); }
@@ -176,6 +196,7 @@ const App: React.FC = () => {
 
   const handleSocialLogin = (provider: 'google' | 'facebook') => {
     setIsLoggingIn(provider);
+    // Simulate a secure social login redirect and response
     setTimeout(() => {
       const mockUser: UserProfile = provider === 'google' 
         ? { name: 'Guest User (Google)', email: 'guest.google@gmail.com', photo: 'https://api.dicebear.com/7.x/avataaars/svg?seed=google' }
@@ -183,13 +204,16 @@ const App: React.FC = () => {
       
       setUser(mockUser);
       setIsLoggingIn(null);
-    }, 1500);
+      showToast(`${provider === 'google' ? 'গুগল' : 'ফেসবুক'} দিয়ে লগইন সফল হয়েছে!`);
+      setActiveTab(AppTab.Library);
+    }, 2000);
   };
 
   const handleLogout = () => {
-    if (confirm("Are you sure you want to sign out?")) {
+    if (confirm("আপনি কি নিশ্চিত যে আপনি সাইন আউট করতে চান?")) {
       setUser(null);
       setActiveTab(AppTab.Library);
+      showToast("আপনি সাইন আউট করেছেন।");
     }
   };
 
@@ -220,6 +244,14 @@ const App: React.FC = () => {
   return (
     <div className={`min-h-screen flex flex-col transition-colors duration-500 ${themeClasses}`}>
       
+      {/* Toast Notification */}
+      {toast && (
+        <div className={`fixed top-20 left-1/2 -translate-x-1/2 z-[100] px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-3 animate-slideUp font-bold text-sm border ${toast.type === 'success' ? 'bg-emerald-500 text-white border-emerald-400' : 'bg-rose-500 text-white border-rose-400'}`}>
+          {toast.type === 'success' ? <Check className="w-5 h-5" /> : <AlertCircle className="w-5 h-5" />}
+          {toast.message}
+        </div>
+      )}
+
       {/* Desktop & Mobile Navigation Header */}
       <header className={`fixed top-0 left-0 right-0 z-50 h-16 border-b backdrop-blur-xl transition-all ${theme === Theme.Dark ? 'bg-slate-900/80 border-slate-800' : 'bg-white/80 border-slate-200 shadow-sm'}`}>
         <div className="max-w-6xl mx-auto px-6 h-full flex items-center justify-between">
@@ -289,7 +321,7 @@ const App: React.FC = () => {
                    </div>
                    <input 
                       type="text" 
-                      placeholder="Search songs or ask AI for any hymn..."
+                      placeholder="গান খুঁজুন অথবা যেকোনো গানের লিরিক্স AI কে জিজ্ঞাসা করুন..."
                       value={searchQuery}
                       onChange={(e) => {
                         setSearchQuery(e.target.value);
@@ -304,7 +336,7 @@ const App: React.FC = () => {
                         disabled={isSearchingAI || !searchQuery.trim()}
                         className="bg-indigo-600 text-white px-5 py-2.5 rounded-full text-[10px] font-black flex items-center gap-2 hover:bg-indigo-700 active:scale-95 transition-all disabled:opacity-50 disabled:pointer-events-none shadow-lg shadow-indigo-200"
                      >
-                        {isSearchingAI ? "FINDING..." : <><Wand2 className="w-4 h-4" /> AI SEARCH</>}
+                        {isSearchingAI ? "খুঁজছি..." : <><Wand2 className="w-4 h-4" /> AI সার্চ</>}
                      </button>
                    </div>
                 </div>
@@ -373,7 +405,7 @@ const App: React.FC = () => {
                              }`}
                            >
                              {isStudySaved ? <Check className="w-5 h-5" /> : <Bookmark className="w-5 h-5" />}
-                             <span className="text-xs font-black uppercase tracking-widest">{isStudySaved ? 'Saved to Library' : 'Save Study'}</span>
+                             <span className="text-xs font-black uppercase tracking-widest">{isStudySaved ? 'লাইব্রেরিতে আছে' : 'সেভ করুন'}</span>
                            </button>
 
                            <button 
@@ -385,7 +417,7 @@ const App: React.FC = () => {
                              }`}
                            >
                              {isStudyShared ? <Check className="w-5 h-5 text-emerald-500" /> : <Share2 className="w-5 h-5" />}
-                             <span className="text-xs font-black uppercase tracking-widest">Share Insight</span>
+                             <span className="text-xs font-black uppercase tracking-widest">শেয়ার করুন</span>
                            </button>
                         </div>
                       )}
@@ -397,7 +429,7 @@ const App: React.FC = () => {
           {activeTab === AppTab.Reflections && (
              <div className="space-y-12">
                 <div className="text-center md:text-left">
-                  <h2 className="text-5xl font-black tracking-tighter mb-4 leading-none">Your Library</h2>
+                  <h2 className="text-5xl font-black tracking-tighter mb-4 leading-none">আপনার লাইব্রেরি</h2>
                   <p className="text-lg opacity-80 font-medium">আপনার প্রিয় গান এবং স্টাডি নোটগুলি এখানে সংরক্ষিত আছে।</p>
                 </div>
                 
@@ -412,7 +444,7 @@ const App: React.FC = () => {
                              <div className="flex-1">
                                 <h3 className={`text-xl font-black ${textTitleClasses}`}>{song.title}</h3>
                                 <p className={`opacity-60 italic text-sm ${textMutedClasses}`}>{song.reference}</p>
-                                <button onClick={() => {setSelectedSong(song); setActiveTab(AppTab.Reader);}} className="mt-3 text-indigo-500 font-bold text-xs uppercase tracking-widest flex items-center gap-1">Read Now <ChevronRight className="w-4 h-4" /></button>
+                                <button onClick={() => {setSelectedSong(song); setActiveTab(AppTab.Reader);}} className="mt-3 text-indigo-500 font-bold text-xs uppercase tracking-widest flex items-center gap-1">এখন পড়ুন <ChevronRight className="w-4 h-4" /></button>
                              </div>
                              <div className="flex flex-col gap-2">
                                 <button onClick={() => toggleFavorite(song.id)} className="p-3 bg-rose-100 dark:bg-rose-900/30 text-rose-500 rounded-2xl shrink-0 hover:scale-110 transition-all"><Trash2 className="w-5 h-5" /></button>
@@ -440,7 +472,7 @@ const App: React.FC = () => {
                                }}
                                className="text-indigo-500 font-bold text-xs uppercase tracking-widest flex items-center gap-1"
                              >
-                               Read Full Study <ChevronRight className="w-4 h-4" />
+                               সম্পূর্ণ ব্যাখ্যা <ChevronRight className="w-4 h-4" />
                              </button>
                           </div>
                         ))}
@@ -448,7 +480,8 @@ const App: React.FC = () => {
                    ) : (
                       <div className="col-span-full py-20 text-center opacity-40">
                          <CloudOff className="w-16 h-16 mx-auto mb-4" />
-                         <p className="text-xl font-bold">No saved items found.</p>
+                         <p className="text-xl font-bold">এখানে কিছুই নেই।</p>
+                         <p className="mt-2">প্রিয় গান বা স্টাডি নোট সেভ করলে এখানে দেখা যাবে।</p>
                       </div>
                    )}
                 </div>
@@ -479,12 +512,12 @@ const App: React.FC = () => {
                             <div className={`p-8 rounded-[3rem] border shadow-sm flex flex-col items-center justify-center gap-2 ${cardBgClasses}`}>
                                <Heart className="w-8 h-8 text-rose-500 mb-2" />
                                <p className={`text-4xl font-black ${textTitleClasses}`}>{favorites.length}</p>
-                               <p className="text-xs font-black opacity-40 uppercase tracking-widest">Favorite Songs</p>
+                               <p className="text-xs font-black opacity-40 uppercase tracking-widest">প্রিয় গান</p>
                             </div>
                             <div className={`p-8 rounded-[3rem] border shadow-sm flex flex-col items-center justify-center gap-2 ${cardBgClasses}`}>
                                <Bookmark className="w-8 h-8 text-amber-500 mb-2" />
                                <p className={`text-4xl font-black ${textTitleClasses}`}>{savedStudies.length}</p>
-                               <p className="text-xs font-black opacity-40 uppercase tracking-widest">Insights</p>
+                               <p className="text-xs font-black opacity-40 uppercase tracking-widest">সংরক্ষিত নোট</p>
                             </div>
                          </div>
 
@@ -494,7 +527,7 @@ const App: React.FC = () => {
                                <ChevronRight className="w-6 h-6 opacity-40 group-hover:opacity-100 group-hover:translate-x-2 transition-all" />
                             </button>
                             <button onClick={handleLogout} className="w-full p-8 bg-rose-50 dark:bg-rose-900/20 text-rose-600 rounded-[3rem] font-black uppercase tracking-widest text-xs flex items-center justify-center gap-3 hover:bg-rose-100 transition-all">
-                               <LogOut className="w-6 h-6" /> Sign Out from Account
+                               <LogOut className="w-6 h-6" /> সাইন আউট করুন
                             </button>
                          </div>
                       </div>
@@ -506,7 +539,7 @@ const App: React.FC = () => {
                         <LogIn className="w-12 h-12" />
                       </div>
                       <div className="space-y-2">
-                        <h2 className={`text-4xl font-black tracking-tight ${textTitleClasses}`}>Join Sacred Melodies</h2>
+                        <h2 className={`text-4xl font-black tracking-tight ${textTitleClasses}`}>সক্রেড মেলোডিজে যুক্ত হন</h2>
                         <p className={`opacity-80 text-lg font-medium leading-relaxed ${textMutedClasses}`}>লগইন করুন আপনার প্রিয় গান এবং স্টাডি নোটগুলি সব ডিভাইসে সিনক্রোনাইজ করতে।</p>
                       </div>
                     </div>
@@ -532,7 +565,7 @@ const App: React.FC = () => {
                     </div>
 
                     <div className="pt-8 border-t border-slate-100 dark:border-slate-800">
-                      <button onClick={() => setActiveTab(AppTab.Developer)} className="text-xs font-black opacity-40 uppercase tracking-[0.2em] hover:opacity-100 transition-opacity">Meet the Developer</button>
+                      <button onClick={() => setActiveTab(AppTab.Developer)} className="text-xs font-black opacity-40 uppercase tracking-[0.2em] hover:opacity-100 transition-opacity">ডেভেলপারের সাথে পরিচিত হন</button>
                     </div>
                   </div>
                 )}
