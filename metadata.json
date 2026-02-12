@@ -1,5 +1,5 @@
 {
-  "name": "Sacred Melodies: Bible Song Reader",
+  "name": "Sacred Melodies",
   "description": "An elegant, interactive book reader for Bible songs and hymns with AI-powered reflections and text-to-speech features.",
   "requestFramePermissions": [
     "microphone"
