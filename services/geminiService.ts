@@ -26,7 +26,6 @@ export const generateReflection = async (songTitle: string, lyrics: string[]) =>
         systemInstruction: "You are a thoughtful spiritual guide. Keep reflections brief, encouraging, and centered on the themes of the song provided."
       }
     });
-    // Use .text property directly as per guidelines
     return response.text;
   }).catch(error => {
     console.error("Reflection Error:", error);
@@ -45,11 +44,36 @@ export const explainVerse = async (verseReference: string) => {
         systemInstruction: "You are an expert biblical scholar and theologian. Your goal is to explain Bible verses in a clear, deep, and spiritually enriching way in Bengali."
       }
     });
-    // Use .text property directly
     return response.text;
   }).catch(error => {
     console.error("Explanation Error:", error);
     return "দুঃখিত, এই পদের ব্যাখ্যা খুঁজে পাওয়া যাচ্ছে না। অনুগ্রহ করে নেটওয়ার্ক এবং API Key চেক করে আবার চেষ্টা করুন।";
+  });
+};
+
+export const generateVerseImage = async (verseReference: string, explanation: string) => {
+  return withRetry(async () => {
+    const prompt = `Create a serene, high-quality, spiritual, and cinematic digital art representing the essence of the Bible verse: "${verseReference}". Themes: ${explanation.substring(0, 200)}. Style: Soft lighting, oil painting or realistic cinematic photography, no text in image.`;
+    
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash-image',
+      contents: { parts: [{ text: prompt }] },
+      config: {
+        imageConfig: {
+          aspectRatio: "16:9"
+        }
+      }
+    });
+
+    for (const part of response.candidates[0].content.parts) {
+      if (part.inlineData) {
+        return `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
+      }
+    }
+    return null;
+  }).catch(error => {
+    console.error("Image Generation Error:", error);
+    return null;
   });
 };
 
@@ -72,7 +96,6 @@ export const fetchSongFromAI = async (query: string) => {
         }
       }
     });
-    // Use .text property directly
     const text = response.text?.trim() || '{}';
     return JSON.parse(text);
   }).catch(error => {
@@ -85,7 +108,6 @@ export const speakLyrics = async (text: string) => {
   return withRetry(async () => {
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash-preview-tts",
-      // Use the formal parts structure for TTS contents as per examples
       contents: [{ parts: [{ text: `Read these lyrics warmly: ${text}` }] }],
       config: {
         responseModalities: [Modality.AUDIO],
@@ -117,7 +139,6 @@ export const decodeBase64Audio = (base64: string) => {
   return bytes;
 };
 
-// Implement audio decoding as per Gemini API raw PCM streaming requirements
 export const decodeAudioData = async (
   data: Uint8Array,
   ctx: AudioContext,

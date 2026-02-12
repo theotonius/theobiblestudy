@@ -9,9 +9,9 @@ import {
   ShieldCheck, Facebook, Share2, Check, Bookmark, Trash2, 
   ChevronLeft, ChevronRight, CloudOff, X, Moon, Sun, Coffee, 
   Code2, Github, Globe, Linkedin, Mail, Smartphone, Award, Laptop, Wand2, AlertCircle,
-  LogIn, Chrome, Settings, UserCircle, Cpu, Layers, Zap, PhoneCall
+  LogIn, Chrome, Settings, UserCircle, Cpu, Layers, Zap, PhoneCall, Image as ImageIcon
 } from 'lucide-react';
-import { fetchSongFromAI, explainVerse } from './services/geminiService';
+import { fetchSongFromAI, explainVerse, generateVerseImage } from './services/geminiService';
 
 const NavButton: React.FC<{ active: boolean; onClick: () => void; icon: React.ReactNode; label: string; activeTheme: Theme }> = ({ active, onClick, icon, label, activeTheme }) => (
   <button onClick={onClick} className={`flex flex-col items-center gap-1.5 transition-all duration-300 ${active ? 'scale-110' : 'opacity-60 hover:opacity-100'}`}>
@@ -64,7 +64,9 @@ const App: React.FC = () => {
 
   const [isSearchingAI, setIsSearchingAI] = useState(false);
   const [isExplaining, setIsExplaining] = useState(false);
+  const [isGeneratingImage, setIsGeneratingImage] = useState(false);
   const [verseExplanation, setVerseExplanation] = useState<string | null>(null);
+  const [verseImage, setVerseImage] = useState<string | null>(null);
   const [searchError, setSearchError] = useState<string | null>(null);
   const [isStudySaved, setIsStudySaved] = useState(false);
   const [isStudyShared, setIsStudyShared] = useState(false);
@@ -132,14 +134,22 @@ const App: React.FC = () => {
     if (!studyQuery.trim()) return;
     setIsExplaining(true);
     setVerseExplanation(null);
+    setVerseImage(null);
     setIsStudySaved(false);
+    
     try {
       const res = await explainVerse(studyQuery);
       setVerseExplanation(res);
+      
+      // Start generating image immediately after explanation starts showing
+      setIsGeneratingImage(true);
+      const imgRes = await generateVerseImage(studyQuery, res);
+      setVerseImage(imgRes);
     } catch (error) {
       console.error(error);
     } finally {
       setIsExplaining(false);
+      setIsGeneratingImage(false);
     }
   };
 
@@ -215,11 +225,11 @@ const App: React.FC = () => {
   return (
     <div className={`min-h-screen flex flex-col transition-colors duration-500 ${themeClasses}`}>
       
-      {/* Desktop Navigation Header */}
+      {/* Desktop & Mobile Navigation Header */}
       <header className={`fixed top-0 left-0 right-0 z-50 h-16 border-b backdrop-blur-xl transition-all ${theme === Theme.Dark ? 'bg-slate-900/80 border-slate-800' : 'bg-white/80 border-slate-200 shadow-sm'}`}>
         <div className="max-w-6xl mx-auto px-6 h-full flex items-center justify-between">
            <div className="flex items-center">
-              <h1 className="text-xl font-black tracking-tighter hidden sm:block">Sacred Melodies</h1>
+              <h1 className="text-lg sm:text-xl font-black tracking-tighter block">Sacred Melodies</h1>
            </div>
 
            <nav className="hidden md:flex items-center gap-1 bg-slate-100/50 dark:bg-slate-800 p-1 rounded-xl">
@@ -327,7 +337,7 @@ const App: React.FC = () => {
                    </div>
                    <div className="space-y-2">
                      <h2 className="text-4xl md:text-5xl font-black tracking-tight">Bible Discovery</h2>
-                     <p className="opacity-80 text-lg md:text-xl font-medium">যেকোনো পদের ব্যাখ্যা জানতে নিচের বক্সে সার্চ করুন।</p>
+                     <p className="opacity-80 text-lg md:text-xl font-medium">যেকোনো পদের ব্যাখ্যা ও প্রেক্ষাপট অনুযায়ী ছবি দেখতে সার্চ করুন।</p>
                    </div>
                 </div>
                 
@@ -342,19 +352,47 @@ const App: React.FC = () => {
                    />
                    <button 
                       onClick={handleStudySearch}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 p-5 bg-indigo-600 text-white rounded-full shadow-xl hover:scale-105 transition-all"
+                      disabled={isExplaining}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 p-5 bg-indigo-600 text-white rounded-full shadow-xl hover:scale-105 transition-all disabled:opacity-50"
                    >
                       {isExplaining ? <Loader2 className="w-6 h-6 animate-spin" /> : <Search className="w-6 h-6" />}
                    </button>
                 </div>
 
-                {verseExplanation && (
-                   <div className={`p-8 md:p-14 rounded-[3.5rem] border shadow-2xl font-serif leading-relaxed text-xl md:text-2xl page-transition flex flex-col ${cardBgClasses}`}>
-                      <div className={`whitespace-pre-wrap mb-10 ${theme === Theme.Dark ? 'text-slate-100' : ''}`}>
+                {(verseExplanation || isGeneratingImage) && (
+                   <div className={`p-8 md:p-14 rounded-[3.5rem] border shadow-2xl font-serif leading-relaxed page-transition flex flex-col gap-10 ${cardBgClasses}`}>
+                      
+                      {/* AI Visual - The Contextual Image */}
+                      <div className="relative w-full aspect-video rounded-[2.5rem] overflow-hidden bg-slate-100 dark:bg-slate-900 shadow-inner group">
+                         {verseImage ? (
+                            <img src={verseImage} alt="Contextual Insight" className="w-full h-full object-cover transition-transform duration-[20s] hover:scale-110" />
+                         ) : (
+                            <div className="w-full h-full flex flex-col items-center justify-center gap-4 text-slate-400">
+                               {isGeneratingImage ? (
+                                  <>
+                                     <div className="relative">
+                                        <ImageIcon className="w-16 h-16 animate-pulse" />
+                                        <Sparkles className="absolute -top-2 -right-2 w-6 h-6 text-amber-500 animate-bounce" />
+                                     </div>
+                                     <p className="text-sm font-black uppercase tracking-[0.2em] animate-pulse">AI Visualizing Context...</p>
+                                  </>
+                               ) : (
+                                  <ImageIcon className="w-16 h-16 opacity-20" />
+                               )}
+                            </div>
+                         )}
+                         {verseImage && (
+                            <div className="absolute top-6 left-6 px-4 py-2 bg-black/40 backdrop-blur-md rounded-full border border-white/20 text-white text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
+                               <Sparkles className="w-3 h-3 text-amber-400" /> AI Visual Interpretation
+                            </div>
+                         )}
+                      </div>
+
+                      <div className={`whitespace-pre-wrap text-xl md:text-2xl ${theme === Theme.Dark ? 'text-slate-100' : ''}`}>
                         {verseExplanation}
                       </div>
                       
-                      {/* Actions Footer - Positioned under text */}
+                      {/* Actions Footer */}
                       <div className="flex flex-wrap items-center gap-4 pt-8 border-t border-slate-100 dark:border-slate-700/50">
                          <button 
                            onClick={handleSaveStudy}
@@ -380,12 +418,6 @@ const App: React.FC = () => {
                            {isStudyShared ? <Check className="w-5 h-5 text-emerald-500" /> : <Share2 className="w-5 h-5" />}
                            <span className="text-xs font-black uppercase tracking-widest">Share Insight</span>
                          </button>
-
-                         {isStudySaved && (
-                            <div className="hidden sm:flex items-center gap-2 text-emerald-500 dark:text-emerald-400 font-bold text-xs uppercase tracking-widest animate-pulse ml-auto">
-                               <Check className="w-4 h-4" /> Ready in Library
-                            </div>
-                         )}
                       </div>
                    </div>
                 )}
