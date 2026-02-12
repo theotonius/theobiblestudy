@@ -26,7 +26,8 @@ const NavButton: React.FC<{ active: boolean; onClick: () => void; icon: React.Re
 
 const SplashScreen: React.FC<{ onFinish: () => void }> = ({ onFinish }) => {
   useEffect(() => {
-    const timer = setTimeout(onFinish, 3000);
+    // Updated duration to 4 seconds (4000ms)
+    const timer = setTimeout(onFinish, 4000);
     return () => clearTimeout(timer);
   }, [onFinish]);
 
