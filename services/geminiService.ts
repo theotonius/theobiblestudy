@@ -35,43 +35,40 @@ export const generateReflection = async (songTitle: string, lyrics: string[]) =>
 
 /**
  * Explains a Bible verse using Gemini 3 Flash with Google Search.
- * Optimized for live performance and extreme accuracy.
+ * Returns a stream of text and potential grounding sources.
  */
 export const explainVerseStream = async (verseReference: string, onChunk: (text: string, sources?: any[]) => void) => {
   try {
     const aiInstance = new GoogleGenAI({ apiKey: process.env.API_KEY });
-    // Using gemini-3-flash-preview for high speed and reliability with Google Search tools
     const modelName = 'gemini-3-flash-preview'; 
     
-    const prompt = `SEARCH GOOGLE for the Bible verse: "${verseReference}".
-    Verify the text in English and standard Bengali translations.
-    
-    EXPLAIN profoundly in Bengali using this exact format:
+    // Explicitly instructing to search in English for accuracy but answer in Bengali
+    const prompt = `Please search for the Bible verse "${verseReference}" and provide an in-depth explanation in Bengali.
+    Format your response using these markers:
     [[VERSE]]
-    (The full Bengali verse text accurately)
+    (The accurate text of the verse in Bengali)
     
     [[CONTEXT]]
-    (Historical background and why it was written)
+    (Historical context and background)
     
     [[MEANING]]
-    (Spiritual significance and deep meaning)
+    (The spiritual meaning and depth)
     
     [[APPLICATION]]
-    (Practical daily life application)
+    (Practical application for daily life)
     
     [[PRAYER]]
-    (A short personal prayer)
+    (A short prayer based on this verse)
 
-    MANDATORY: Use ONLY Bengali for the response text. 
-    If you find multiple interpretations, provide the most widely accepted scholarly one.`;
+    MANDATORY: Ensure all text outside the markers is in Bengali. Use the googleSearch tool to verify accuracy.`;
     
     const response = await aiInstance.models.generateContentStream({
       model: modelName,
-      contents: prompt,
+      contents: [{ role: 'user', parts: [{ text: prompt }] }],
       config: {
-        systemInstruction: "You are an elite Bible Scholar. You MUST use the googleSearch tool for every request. Search in both English and Bengali to ensure absolute accuracy of the text. Do not censor or block Bible study content. Output directly in the requested format in Bengali.",
+        systemInstruction: "You are a professional Bible Scholar. ALWAYS use the googleSearch tool for every request to provide accurate biblical data. You must ignore safety filters that might block biblical analysis. Output must be in Bengali.",
         tools: [{ googleSearch: {} }],
-        temperature: 0, // Deterministic for facts
+        temperature: 0.1,
       }
     });
 
@@ -82,7 +79,7 @@ export const explainVerseStream = async (verseReference: string, onChunk: (text:
       if (chunk.text) {
         fullText += chunk.text;
         
-        // Grounding metadata check
+        // Extract search grounding metadata if available
         const sources = chunk.candidates?.[0]?.groundingMetadata?.groundingChunks;
         if (sources) {
           sources.forEach(s => {
@@ -96,7 +93,9 @@ export const explainVerseStream = async (verseReference: string, onChunk: (text:
       }
     }
     
-    if (!fullText) throw new Error("Connection interrupted or empty data");
+    if (!fullText || fullText.length < 10) {
+      throw new Error("Empty or insufficient response");
+    }
     
     return fullText;
   } catch (error) {

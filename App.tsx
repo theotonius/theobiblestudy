@@ -241,7 +241,7 @@ const App: React.FC = () => {
       await explainVerseStream(query, (chunk, sources) => {
         if (!contentReceived && chunk.length > 5) {
           contentReceived = true;
-          setIsExplaining(false); // Switch to stream UI early
+          setIsExplaining(false); // Stop loader as soon as data flows
         }
         setVerseExplanation(chunk);
         if (sources) {
@@ -249,16 +249,15 @@ const App: React.FC = () => {
         }
       });
       
-      // If we finished without any content
       if (!contentReceived && !verseExplanation) {
-        setVerseExplanation("দুঃখিত, কোনো তথ্য পাওয়া যায়নি। অনুগ্রহ করে পদের নাম পরিষ্কারভাবে লিখুন।");
+        setVerseExplanation("দুঃখিত, কোনো তথ্য পাওয়া যায়নি। অনুগ্রহ করে পদের নাম পরিষ্কারভাবে লিখুন (যেমন: যোহন ৩:১৬)।");
       }
 
     } catch (error: any) {
       console.error("Search Error:", error);
       setIsExplaining(false);
-      setVerseExplanation("দুঃখিত, সার্ভার সংযোগ বিচ্ছিন্ন হয়েছে। অনুগ্রহ করে ইন্টারনেট চেক করে পুনরায় চেষ্টা করুন।");
-      showToast("অনুসন্ধান ব্যর্থ হয়েছে।", "error");
+      setVerseExplanation("দুঃখিত, তথ্য খুঁজতে সমস্যা হচ্ছে। অনুগ্রহ করে আপনার ইন্টারনেট সংযোগ চেক করুন এবং পুনরায় চেষ্টা করুন।");
+      showToast("সার্চ ব্যর্থ হয়েছে।", "error");
     } finally {
       setIsExplaining(false);
     }
