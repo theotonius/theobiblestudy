@@ -15,12 +15,15 @@ async function withRetry<T>(fn: () => Promise<T>, retries = 2, delay = 1000): Pr
 
 export const generateReflection = async (songTitle: string, lyrics: string[]) => {
   return withRetry(async () => {
-    const prompt = `Based on the lyrics of the Bible song "${songTitle}", provide a short spiritual reflection and a related Bible verse. Lyrics: ${lyrics.join(' ')}`;
+    const prompt = `Based on the lyrics of the Bible song "${songTitle}", provide a short spiritual reflection and a related Bible verse in Bengali. 
+    Structure:
+    - **প্রতিফলন**: [Short meaningful text]
+    - **সংশ্লিষ্ট পদ**: [Verse]`;
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
       contents: prompt,
       config: {
-        systemInstruction: "You are a thoughtful spiritual guide. Keep reflections brief, encouraging, and centered on the themes of the song provided."
+        systemInstruction: "You are a thoughtful spiritual guide providing short, encouraging reflections in Bengali."
       }
     });
     return response.text;
@@ -30,22 +33,39 @@ export const generateReflection = async (songTitle: string, lyrics: string[]) =>
   });
 };
 
+/**
+ * Explains a Bible verse using Gemini 3 Pro with optimized thinking budget for speed.
+ */
 export const explainVerseStream = async (verseReference: string, onChunk: (text: string) => void) => {
   try {
-    // Optimized for speed and clear structure
-    const prompt = `Explain "${verseReference}" in Bengali. Use exactly this format:
-    📌 **পদটি:** [Verse Text]
-    📜 **প্রেক্ষাপট:** [Short Context]
-    💎 **গভীর অর্থ:** [Deep Meaning in 3-4 bullet points]
-    🌱 **জীবনের প্রয়োগ:** [Practical Application]`;
+    const prompt = `Explain the Bible verse "${verseReference}" in Bengali with professional depth and theological accuracy.
+    Use this EXACT structure:
+
+    📖 **মূল পাঠ ও অনুবাদ**
+    [সরাসরি অনুবাদ]
+
+    📜 **ঐতিহাসিক প্রেক্ষাপট**
+    [সারগর্ভ প্রেক্ষাপট]
+
+    💎 **আধ্যাত্মিক মুক্তো (গভীর অর্থ)**
+    [৩টি গভীর ধর্মতাত্ত্বিক পয়েন্ট]
+
+    🌱 **আমাদের জীবনে প্রয়োগ**
+    [বাস্তব জীবনের গাইডলাইন]
+
+    🙏 **একটি প্রার্থনা**
+    [পদটির ওপর ভিত্তি করে ছোট সুন্দর প্রার্থনা]
+
+    Start responding immediately with the first heading. Do not use any introductory conversational filler.`;
     
     const response = await ai.models.generateContentStream({
-      model: 'gemini-3-flash-preview',
+      model: 'gemini-3-pro-preview', // Upgraded back to Pro for depth
       contents: prompt,
       config: {
-        systemInstruction: "You are an expert biblical scholar. Provide structured, deep, and rapid explanations in Bengali. No conversational filler.",
-        thinkingConfig: { thinkingBudget: 0 },
-        temperature: 0.2 // Lower temperature for more consistent, faster results
+        systemInstruction: "You are an elite Bible Scholar. Provide profound, structured Bengali explanations. Be direct and concise. Start streaming immediately without preambles.",
+        thinkingConfig: { thinkingBudget: 4096 }, // Moderate budget to balance reasoning depth and response speed
+        temperature: 0.2, // Low for faster consistency
+        maxOutputTokens: 2500
       }
     });
 
@@ -68,7 +88,7 @@ export const fetchSongFromAI = async (query: string) => {
   return withRetry(async () => {
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
-      contents: `Find the lyrics for the Bible song or hymn: "${query}". Return as JSON with title, reference, category (Worship/Praise/Hymn/Kids), and lyrics array.`,
+      contents: `Find the lyrics for the Bible song: "${query}". Return as JSON.`,
       config: {
         responseMimeType: "application/json",
         responseSchema: {
