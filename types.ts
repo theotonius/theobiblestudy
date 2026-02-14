@@ -12,6 +12,7 @@ export interface UserProfile {
   name: string;
   email: string;
   photo: string;
+  provider: 'google' | 'facebook';
 }
 
 export interface SavedStudy {
