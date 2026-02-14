@@ -227,7 +227,9 @@ const App: React.FC = () => {
   };
 
   const handleStudySearch = async () => {
-    if (!studyQuery.trim()) return;
+    const query = studyQuery.trim();
+    if (!query) return;
+
     setIsExplaining(true);
     setVerseExplanation(""); 
     setGroundingSources([]);
@@ -235,24 +237,28 @@ const App: React.FC = () => {
     setIsStudyShared(false);
     
     try {
-      let chunkCount = 0;
-      await explainVerseStream(studyQuery, (chunk, sources) => {
+      let hasReceivedData = false;
+      await explainVerseStream(query, (chunk, sources) => {
+        if (!hasReceivedData && chunk.length > 5) {
+          hasReceivedData = true;
+          setIsExplaining(false); // Hide the main loader early as text flows
+        }
         setVerseExplanation(chunk);
         if (sources && sources.length > 0) {
           setGroundingSources(sources);
         }
-        chunkCount++;
-        // Hide loader immediately on first real chunk of text
-        if (chunkCount > 0 && isExplaining) {
-          setIsExplaining(false);
-        }
       });
+      
+      if (!hasReceivedData) {
+        setIsExplaining(false);
+        setVerseExplanation("দুঃখিত, মডেলটি কোনো উত্তর দিতে পারছে না। দয়া করে পদের নাম পরিষ্কারভাবে পুনরায় লিখুন।");
+      }
     } catch (error: any) {
       console.error("Search Error:", error);
-      const errorMsg = "দুঃখিত, তথ্য লোড করা সম্ভব হয়নি। অনুগ্রহ করে পদের নাম সঠিকভাবে লিখুন (উদা: যোহন ৩:১৬)।";
-      setVerseExplanation(errorMsg);
       setIsExplaining(false);
-      showToast("অনুসন্ধান ব্যর্থ হয়েছে", "error");
+      const errorMsg = "সার্ভার সংযোগ বিচ্ছিন্ন হয়েছে। অনুগ্রহ করে ইন্টারনেট সংযোগ চেক করে পুনরায় চেষ্টা করুন।";
+      setVerseExplanation(errorMsg);
+      showToast("তথ্য আনতে সমস্যা হয়েছে", "error");
     } finally {
       setIsExplaining(false);
     }
