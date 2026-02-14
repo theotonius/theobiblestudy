@@ -39,20 +39,47 @@
       }
 
       body {
-        font-family: 'Inter', 'SolaimanLipi', sans-serif;
+        font-family: 'Inter', 'SolaimanLipi', 'SiyamRupali', 'Kalpurush', sans-serif;
         background-color: #fdfbf7;
         margin: 0;
         padding: 0;
         -webkit-tap-highlight-color: transparent;
+        /* Anti-breaking Fix for Bengali */
+        text-rendering: optimizeLegibility;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        font-variant-ligatures: common-ligatures;
+        font-feature-settings: "kern", "liga", "clig", "calt";
       }
 
-      /* Font Classes */
-      .font-kalpurush { font-family: 'Kalpurush', sans-serif !important; }
-      .font-solaiman { font-family: 'SolaimanLipi', sans-serif !important; }
-      .font-siyam { font-family: 'SiyamRupali', sans-serif !important; }
-      .font-mukti { font-family: 'Mukti', sans-serif !important; }
-      .font-lohit { font-family: 'Lohit', sans-serif !important; }
-      .font-bensen { font-family: 'BenSen', cursive !important; }
+      /* Font Classes with Rendering Fixes */
+      .font-kalpurush { 
+        font-family: 'Kalpurush', Arial, sans-serif !important;
+        text-rendering: optimizeLegibility;
+        font-feature-settings: "kern", "liga", "clig", "calt";
+      }
+      .font-solaiman { 
+        font-family: 'SolaimanLipi', Arial, sans-serif !important;
+        text-rendering: optimizeLegibility;
+        font-feature-settings: "kern", "liga", "clig", "calt";
+      }
+      .font-siyam { 
+        font-family: 'SiyamRupali', Arial, sans-serif !important;
+        text-rendering: optimizeLegibility;
+        font-feature-settings: "kern", "liga", "clig", "calt";
+      }
+      .font-mukti { 
+        font-family: 'Mukti', Arial, sans-serif !important;
+        text-rendering: optimizeLegibility;
+      }
+      .font-lohit { 
+        font-family: 'Lohit', Arial, sans-serif !important;
+        text-rendering: optimizeLegibility;
+      }
+      .font-bensen { 
+        font-family: 'BenSen', cursive !important;
+        text-rendering: optimizeLegibility;
+      }
       
       /* Global Custom Scrollbar */
       * {
