@@ -34,7 +34,8 @@ export const generateReflection = async (songTitle: string, lyrics: string[]) =>
 };
 
 /**
- * Explains a Bible verse using Gemini 3 Flash for high speed.
+ * Explains a Bible verse using Gemini 3 Flash.
+ * Removed thinkingConfig to ensure maximum speed and compatibility.
  */
 export const explainVerseStream = async (verseReference: string, onChunk: (text: string) => void) => {
   try {
@@ -57,15 +58,14 @@ export const explainVerseStream = async (verseReference: string, onChunk: (text:
     [[PRAYER]]
     (A short prayer)
 
-    Do not include any conversational preamble. Just the markers and content. Start immediately with [[VERSE]].`;
+    Do not include any intro or conversational text. Start directly with [[VERSE]].`;
     
     const response = await ai.models.generateContentStream({
       model: modelName,
       contents: prompt,
       config: {
-        systemInstruction: "You are an elite Bible Scholar. Output depth-filled Bengali explanations. Use exactly the provided markers in double brackets like [[VERSE]]. Be fast and direct.",
-        thinkingConfig: { thinkingBudget: 1024 }, // Minimal thinking for faster startup on Flash
-        temperature: 0.1, 
+        systemInstruction: "You are an elite Bible Scholar. Output deep Bengali explanations. Use double brackets for markers like [[VERSE]]. Start immediately.",
+        temperature: 0.2, 
       }
     });
 
