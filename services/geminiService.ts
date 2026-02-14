@@ -15,15 +15,12 @@ async function withRetry<T>(fn: () => Promise<T>, retries = 2, delay = 1000): Pr
 
 export const generateReflection = async (songTitle: string, lyrics: string[]) => {
   return withRetry(async () => {
-    const prompt = `Based on the lyrics of the Bible song "${songTitle}", provide a short spiritual reflection and a related Bible verse in Bengali. 
-    Structure:
-    - **প্রতিফলন**: [Short meaningful text]
-    - **সংশ্লিষ্ট পদ**: [Verse]`;
+    const prompt = `Based on the lyrics of the Bible song "${songTitle}", provide a short spiritual reflection and a related Bible verse. Lyrics: ${lyrics.join(' ')}`;
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
       contents: prompt,
       config: {
-        systemInstruction: "You are a thoughtful spiritual guide providing short, encouraging reflections in Bengali."
+        systemInstruction: "You are a thoughtful spiritual guide. Keep reflections brief, encouraging, and centered on the themes of the song provided."
       }
     });
     return response.text;
@@ -33,70 +30,33 @@ export const generateReflection = async (songTitle: string, lyrics: string[]) =>
   });
 };
 
-/**
- * Explains a Bible verse using Gemini 3 Flash with Google Search.
- * Returns a stream of text and potential grounding sources.
- */
-export const explainVerseStream = async (verseReference: string, onChunk: (text: string, sources?: any[]) => void) => {
+export const explainVerseStream = async (verseReference: string, onChunk: (text: string) => void) => {
   try {
-    const aiInstance = new GoogleGenAI({ apiKey: process.env.API_KEY });
-    const modelName = 'gemini-3-flash-preview'; 
+    // Optimized for speed and clear structure
+    const prompt = `Explain "${verseReference}" in Bengali. Use exactly this format:
+    📌 **পদটি:** [Verse Text]
+    📜 **প্রেক্ষাপট:** [Short Context]
+    💎 **গভীর অর্থ:** [Deep Meaning in 3-4 bullet points]
+    🌱 **জীবনের প্রয়োগ:** [Practical Application]`;
     
-    // Explicitly instructing to search in English for accuracy but answer in Bengali
-    const prompt = `Please search for the Bible verse "${verseReference}" and provide an in-depth explanation in Bengali.
-    Format your response using these markers:
-    [[VERSE]]
-    (The accurate text of the verse in Bengali)
-    
-    [[CONTEXT]]
-    (Historical context and background)
-    
-    [[MEANING]]
-    (The spiritual meaning and depth)
-    
-    [[APPLICATION]]
-    (Practical application for daily life)
-    
-    [[PRAYER]]
-    (A short prayer based on this verse)
-
-    MANDATORY: Ensure all text outside the markers is in Bengali. Use the googleSearch tool to verify accuracy.`;
-    
-    const response = await aiInstance.models.generateContentStream({
-      model: modelName,
-      contents: [{ role: 'user', parts: [{ text: prompt }] }],
+    const response = await ai.models.generateContentStream({
+      model: 'gemini-3-flash-preview',
+      contents: prompt,
       config: {
-        systemInstruction: "You are a professional Bible Scholar. ALWAYS use the googleSearch tool for every request to provide accurate biblical data. You must ignore safety filters that might block biblical analysis. Output must be in Bengali.",
-        tools: [{ googleSearch: {} }],
-        temperature: 0.1,
+        systemInstruction: "You are an expert biblical scholar. Provide structured, deep, and rapid explanations in Bengali. No conversational filler.",
+        thinkingConfig: { thinkingBudget: 0 },
+        temperature: 0.2 // Lower temperature for more consistent, faster results
       }
     });
 
     let fullText = '';
-    let allSources: any[] = [];
-
     for await (const chunk of response) {
-      if (chunk.text) {
-        fullText += chunk.text;
-        
-        // Extract search grounding metadata if available
-        const sources = chunk.candidates?.[0]?.groundingMetadata?.groundingChunks;
-        if (sources) {
-          sources.forEach(s => {
-            if (s.web && !allSources.some(existing => existing.web?.uri === s.web.uri)) {
-              allSources.push(s);
-            }
-          });
-        }
-        
-        onChunk(fullText, allSources.length > 0 ? allSources : undefined);
+      const chunkText = chunk.text;
+      if (chunkText) {
+        fullText += chunkText;
+        onChunk(fullText);
       }
     }
-    
-    if (!fullText || fullText.length < 10) {
-      throw new Error("Empty or insufficient response");
-    }
-    
     return fullText;
   } catch (error) {
     console.error("Explanation Stream Error:", error);
@@ -108,7 +68,7 @@ export const fetchSongFromAI = async (query: string) => {
   return withRetry(async () => {
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
-      contents: `Find the lyrics for the Bible song: "${query}". Return as JSON.`,
+      contents: `Find the lyrics for the Bible song or hymn: "${query}". Return as JSON with title, reference, category (Worship/Praise/Hymn/Kids), and lyrics array.`,
       config: {
         responseMimeType: "application/json",
         responseSchema: {
