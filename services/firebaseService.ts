@@ -3,18 +3,13 @@ import { initializeApp, getApps, FirebaseApp } from "firebase/app";
 import { getDatabase, ref, push, onValue, set, query, limitToLast, serverTimestamp, Database } from "firebase/database";
 import { Message } from "../types";
 
-/**
- * সংযোগ নির্দেশিকা:
- * ১. Firebase Console থেকে আপনার ক্রেডেনশিয়ালগুলো কপি করুন।
- * ২. নিচের 'firebaseConfig' অবজেক্টে সেগুলো বসিয়ে দিন।
- * ৩. apiKey এবং databaseURL সঠিক হলে অ্যাপটি স্বয়ংক্রিয়ভাবে Firebase-এ কানেক্ট হবে।
- */
+// Firebase project configuration
 const firebaseConfig = {
-  apiKey: "YOUR_FIREBASE_API_KEY", // এখানে আপনার API Key দিন
-  authDomain: "your-app-id.firebaseapp.com",
-  databaseURL: "https://your-app-id-default-rtdb.firebaseio.com", // এখানে আপনার DB URL দিন
-  projectId: "your-app-id",
-  storageBucket: "your-app-id.appspot.com",
+  apiKey: "YOUR_FIREBASE_API_KEY",
+  authDomain: "your-app.firebaseapp.com",
+  databaseURL: "https://your-app-default-rtdb.firebaseio.com",
+  projectId: "your-app",
+  storageBucket: "your-app.appspot.com",
   messagingSenderId: "123456789",
   appId: "1:123456789:web:abcdef123456"
 };
@@ -24,25 +19,28 @@ let db: Database | null = null;
 
 const isConfigValid = firebaseConfig.apiKey !== "YOUR_FIREBASE_API_KEY" && firebaseConfig.databaseURL.includes("https://");
 
+// Initialize Firebase only if config is valid
 if (isConfigValid) {
   try {
     app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
     db = getDatabase(app);
-    console.log("Firebase initialized successfully");
   } catch (error) {
     console.error("Firebase initialization failed:", error);
   }
 }
 
+/**
+ * MOCK DATABASE SYSTEM (Fallback)
+ * Uses LocalStorage to simulate a persistent chat when Firebase is not configured.
+ */
 const MOCK_STORAGE_KEY = 'sm_local_chat_messages';
-const LOCAL_SYNC_EVENT = 'sm_local_chat_sync';
 
 const getLocalMessages = (): Message[] => {
   const saved = localStorage.getItem(MOCK_STORAGE_KEY);
   if (!saved) return [
     { 
       id: 'welcome-1', 
-      text: 'স্বাগতম! বাইবেল সং অ্যাপের চ্যাটে আপনাকে স্বাগতম। আপনার নিজের Firebase Key যুক্ত করলে এটি রিয়েলটাইমে সবার সাথে কাজ করবে।', 
+      text: 'স্বাগতম! বাইবেল সং অ্যাপের ফেলোশিপে আপনাকে স্বাগতম।', 
       senderId: 'system', 
       senderName: 'Sacred Melodies', 
       senderPhoto: 'https://api.dicebear.com/7.x/bottts/svg?seed=system', 
@@ -54,55 +52,54 @@ const getLocalMessages = (): Message[] => {
 
 const saveLocalMessage = (message: Message) => {
   const messages = getLocalMessages();
-  const updated = [...messages, message].slice(-50);
+  const updated = [...messages, message].slice(-50); // Keep last 50
   localStorage.setItem(MOCK_STORAGE_KEY, JSON.stringify(updated));
   return updated;
 };
 
 /**
- * Firebase বা Local Storage চেক করার জন্য এক্সপোর্ট করা ফাংশন
+ * API IMPLEMENTATION
  */
-export const isFirebaseConnected = () => !!db;
 
 export const subscribeToMessages = (callback: (messages: Message[]) => void) => {
   if (!db) {
+    // Return mock messages immediately
     callback(getLocalMessages());
     
-    // Listen for updates from other tabs
+    // Listen for local storage changes (if opened in multiple tabs)
     const handleStorage = (e: StorageEvent) => {
-      if (e.key === MOCK_STORAGE_KEY) callback(getLocalMessages());
+      if (e.key === MOCK_STORAGE_KEY) {
+        callback(getLocalMessages());
+      }
     };
-    
-    // Listen for updates from the SAME tab
-    const handleLocalSync = () => {
-      callback(getLocalMessages());
-    };
-
     window.addEventListener('storage', handleStorage);
-    window.addEventListener(LOCAL_SYNC_EVENT, handleLocalSync);
-    
-    return () => {
-      window.removeEventListener('storage', handleStorage);
-      window.removeEventListener(LOCAL_SYNC_EVENT, handleLocalSync);
-    };
+    return () => window.removeEventListener('storage', handleStorage);
   }
 
   const messagesRef = query(ref(db, 'messages'), limitToLast(50));
+  
   return onValue(messagesRef, (snapshot) => {
     const data = snapshot.val();
     if (!data) {
       callback([]);
       return;
     }
+    
     const messagesList: Message[] = Object.keys(data).map(key => ({
       id: key,
       ...data[key]
     })).sort((a, b) => a.timestamp - b.timestamp);
+    
     callback(messagesList);
+  }, (error) => {
+    console.error("Firebase subscription error:", error);
+    // Fallback on error
+    callback(getLocalMessages());
   });
 };
 
 export const sendChatMessage = async (message: Omit<Message, 'id'>) => {
+  // Use Firebase if available
   if (db) {
     try {
       const messagesRef = ref(db, 'messages');
@@ -113,11 +110,11 @@ export const sendChatMessage = async (message: Omit<Message, 'id'>) => {
       });
       return;
     } catch (error) {
-      console.error("Firebase send failed:", error);
+      console.error("Error sending message to Firebase, falling back to local:", error);
     }
   }
 
-  // Fallback: Local Storage Sync
+  // Fallback: Save to LocalStorage
   const localMsg: Message = {
     ...message,
     id: `local-${Date.now()}`,
@@ -125,7 +122,6 @@ export const sendChatMessage = async (message: Omit<Message, 'id'>) => {
   };
   saveLocalMessage(localMsg);
   
-  // Trigger both for cross-tab and same-tab
+  // Trigger a custom event to notify the same tab
   window.dispatchEvent(new StorageEvent('storage', { key: MOCK_STORAGE_KEY }));
-  window.dispatchEvent(new CustomEvent(LOCAL_SYNC_EVENT));
 };

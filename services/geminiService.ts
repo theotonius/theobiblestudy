@@ -15,15 +15,12 @@ async function withRetry<T>(fn: () => Promise<T>, retries = 2, delay = 1000): Pr
 
 export const generateReflection = async (songTitle: string, lyrics: string[]) => {
   return withRetry(async () => {
-    const prompt = `Based on the lyrics of the Bible song "${songTitle}", provide a short spiritual reflection and a related Bible verse in Bengali. 
-    Structure:
-    - **প্রতিফলন**: [Short meaningful text]
-    - **সংশ্লিষ্ট পদ**: [Verse]`;
+    const prompt = `Based on the lyrics of the Bible song "${songTitle}", provide a short spiritual reflection and a related Bible verse. Lyrics: ${lyrics.join(' ')}`;
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
       contents: prompt,
       config: {
-        systemInstruction: "You are a thoughtful spiritual guide providing short, encouraging reflections in Bengali."
+        systemInstruction: "You are a thoughtful spiritual guide. Keep reflections brief, encouraging, and centered on the themes of the song provided."
       }
     });
     return response.text;
@@ -33,39 +30,22 @@ export const generateReflection = async (songTitle: string, lyrics: string[]) =>
   });
 };
 
-/**
- * Explains a Bible verse with depth and beautiful structure.
- */
 export const explainVerseStream = async (verseReference: string, onChunk: (text: string) => void) => {
   try {
-    const prompt = `Explain the Bible verse "${verseReference}" in Bengali with great depth. 
-    Use this EXACT structure with clear headings:
-
-    📖 **মূল পাঠ ও অনুবাদ**
-    [বাংলা অনুবাদ ও সাধারণ অর্থ]
-
-    📜 **ঐতিহাসিক প্রেক্ষাপট**
-    [কখন এবং কেন এটি বলা হয়েছিল]
-
-    💎 **আধ্যাত্মিক মুক্তো (গভীর অর্থ)**
-    [৩-৪টি গভীর পয়েন্ট যেখানে মূল গ্রীক/হিব্রু শব্দের ভাবার্থ থাকবে]
-
-    🌱 **আমাদের জীবনে প্রয়োগ**
-    [দৈনন্দিন জীবনে কীভাবে কাজ করবে]
-
-    🙏 **একটি প্রার্থনা**
-    [পদটির ওপর ভিত্তি করে ছোট সুন্দর প্রার্থনা]
-
-    Ensure high-quality, scholarly yet touching language.`;
+    // Optimized for speed and clear structure
+    const prompt = `Explain "${verseReference}" in Bengali. Use exactly this format:
+    📌 **পদটি:** [Verse Text]
+    📜 **প্রেক্ষাপট:** [Short Context]
+    💎 **গভীর অর্থ:** [Deep Meaning in 3-4 bullet points]
+    🌱 **জীবনের প্রয়োগ:** [Practical Application]`;
     
     const response = await ai.models.generateContentStream({
-      model: 'gemini-3-pro-preview',
+      model: 'gemini-3-flash-preview',
       contents: prompt,
       config: {
-        systemInstruction: "You are a world-class Bible Scholar. Provide profound, structured, and beautiful verse explanations in Bengali. Use sophisticated yet readable language.",
-        thinkingConfig: { thinkingBudget: 8192 },
-        temperature: 0.2,
-        maxOutputTokens: 3000
+        systemInstruction: "You are an expert biblical scholar. Provide structured, deep, and rapid explanations in Bengali. No conversational filler.",
+        thinkingConfig: { thinkingBudget: 0 },
+        temperature: 0.2 // Lower temperature for more consistent, faster results
       }
     });
 
@@ -88,7 +68,7 @@ export const fetchSongFromAI = async (query: string) => {
   return withRetry(async () => {
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
-      contents: `Find the lyrics for the Bible song: "${query}". Return as JSON.`,
+      contents: `Find the lyrics for the Bible song or hymn: "${query}". Return as JSON with title, reference, category (Worship/Praise/Hymn/Kids), and lyrics array.`,
       config: {
         responseMimeType: "application/json",
         responseSchema: {
