@@ -229,11 +229,12 @@ const App: React.FC = () => {
     try {
       await explainVerseStream(studyQuery, (chunk) => {
         setVerseExplanation(chunk);
-        if (isExplaining) setIsExplaining(false);
+        // Initially set isExplaining to false once we get the first chunk
+        // but keep the loading state inside the UI if needed
+        setIsExplaining(false);
       });
     } catch (error) {
       setVerseExplanation("দুঃখিত, ব্যাখ্যা লোড করা সম্ভব হয়নি।");
-    } finally {
       setIsExplaining(false);
     }
   };
@@ -330,56 +331,78 @@ const App: React.FC = () => {
   const textMutedClasses = theme === Theme.Dark ? 'text-slate-300' : theme === Theme.Sepia ? 'text-[#8b6d4d]' : 'text-slate-500';
 
   /**
-   * Helper to parse and render structured verse explanations
+   * Enhanced rendering for structured verse explanations.
+   * Uses case-insensitive regex for more robust marker finding.
    */
   const renderFormattedExplanation = (text: string) => {
     if (!text) return null;
     
     const sections = [
-      { key: '[VERSE]', label: 'মূল পাঠ ও অনুবাদ', icon: <Quote className="w-5 h-5" />, color: 'indigo' },
-      { key: '[CONTEXT]', label: 'ঐতিহাসিক প্রেক্ষাপট', icon: <ScrollText className="w-5 h-5" />, color: 'amber' },
-      { key: '[MEANING]', label: 'গভীর আধ্যাত্মিক অর্থ', icon: <Gem className="w-5 h-5" />, color: 'emerald' },
-      { key: '[APPLICATION]', label: 'আমাদের জীবনে প্রয়োগ', icon: <Sprout className="w-5 h-5" />, color: 'rose' },
-      { key: '[PRAYER]', label: 'একটি প্রার্থনা', icon: <HandHelping className="w-5 h-5" />, color: 'purple' },
+      { key: '[[VERSE]]', label: 'মূল পাঠ ও অনুবাদ', icon: <Quote className="w-5 h-5" />, color: 'indigo' },
+      { key: '[[CONTEXT]]', label: 'ঐতিহাসিক প্রেক্ষাপট', icon: <ScrollText className="w-5 h-5" />, color: 'amber' },
+      { key: '[[MEANING]]', label: 'গভীর আধ্যাত্মিক অর্থ', icon: <Gem className="w-5 h-5" />, color: 'emerald' },
+      { key: '[[APPLICATION]]', label: 'আমাদের জীবনে প্রয়োগ', icon: <Sprout className="w-5 h-5" />, color: 'rose' },
+      { key: '[[PRAYER]]', label: 'একটি প্রার্থনা', icon: <HandHelping className="w-5 h-5" />, color: 'purple' },
     ];
 
-    let currentText = text;
+    // Find occurrences of any markers (case-insensitive)
+    const normalizedText = text.replace(/\[\[/g, ' [[').replace(/\]\]/g, ']] ');
+    
+    // If no markers found yet, show raw text in a nice container (for initial streaming)
+    if (!sections.some(s => text.toUpperCase().includes(s.key.toUpperCase()))) {
+      return (
+        <div className={`p-8 rounded-[2.5rem] border shadow-sm ${cardBgClasses} whitespace-pre-wrap text-xl leading-relaxed text-left animate-fadeIn`}>
+          {text}
+        </div>
+      );
+    }
+
     return (
       <div className="space-y-8 text-left animate-fadeIn">
         {sections.map((section, idx) => {
-          const startIndex = currentText.indexOf(section.key);
+          const upperText = text.toUpperCase();
+          const markerUpper = section.key.toUpperCase();
+          const startIndex = upperText.indexOf(markerUpper);
+          
           if (startIndex === -1) return null;
           
           let content = '';
-          const nextSection = sections.find((s, i) => i > idx && currentText.indexOf(s.key) !== -1);
-          if (nextSection) {
-            content = currentText.substring(startIndex + section.key.length, currentText.indexOf(nextSection.key)).trim();
+          // Find the next available section marker to know where this one ends
+          let nextMarkerIndex = -1;
+          sections.forEach((s, i) => {
+            if (i > idx) {
+              const pos = upperText.indexOf(s.key.toUpperCase());
+              if (pos !== -1 && (nextMarkerIndex === -1 || pos < nextMarkerIndex)) {
+                nextMarkerIndex = pos;
+              }
+            }
+          });
+
+          if (nextMarkerIndex !== -1) {
+            content = text.substring(startIndex + section.key.length, nextMarkerIndex).trim();
           } else {
-            content = currentText.substring(startIndex + section.key.length).trim();
+            content = text.substring(startIndex + section.key.length).trim();
           }
 
           if (!content) return null;
 
           return (
-            <div key={section.key} className={`p-8 rounded-[2.5rem] border shadow-sm transition-all hover:shadow-md ${cardBgClasses} group`}>
-              <div className="flex items-center gap-4 mb-6">
-                 <div className={`p-4 rounded-2xl bg-${section.color}-500/10 text-${section.color}-600 dark:bg-${section.color}-500/20 shadow-inner group-hover:rotate-6 transition-transform`}>
+            <div key={section.key} className={`p-8 rounded-[2.5rem] border shadow-sm transition-all hover:shadow-md ${cardBgClasses} group overflow-hidden relative`}>
+              <div className="absolute top-0 right-0 p-8 opacity-5 -mr-4 -mt-4 transform rotate-12 group-hover:rotate-0 transition-transform">
+                {React.cloneElement(section.icon as React.ReactElement, { className: 'w-24 h-24' })}
+              </div>
+              <div className="flex items-center gap-4 mb-6 relative z-10">
+                 <div className={`p-4 rounded-2xl bg-${section.color}-500/10 text-${section.color}-600 dark:bg-${section.color}-500/20 shadow-inner group-hover:scale-110 transition-transform`}>
                     {section.icon}
                  </div>
                  <h3 className={`text-xl font-black tracking-tight ${textTitleClasses}`}>{section.label}</h3>
               </div>
-              <div className={`text-lg md:text-xl leading-relaxed whitespace-pre-wrap ${theme === Theme.Dark ? 'text-slate-200' : 'text-slate-700 font-medium'}`}>
+              <div className={`text-lg md:text-xl leading-relaxed whitespace-pre-wrap relative z-10 ${theme === Theme.Dark ? 'text-slate-200' : 'text-slate-700 font-medium'}`}>
                  {content}
               </div>
             </div>
           );
         })}
-        {/* Fallback for unstructured text */}
-        {!sections.some(s => text.includes(s.key)) && (
-          <div className={`p-8 rounded-[2.5rem] border shadow-sm ${cardBgClasses} whitespace-pre-wrap text-xl leading-relaxed`}>
-            {text}
-          </div>
-        )}
       </div>
     );
   };
@@ -593,7 +616,7 @@ const App: React.FC = () => {
                                  <button 
                                    key={font.name} 
                                    onClick={() => setActiveFont(font.class)}
-                                   className={`p-4 rounded-2xl border transition-all text-sm font-bold flex flex-col items-start gap-1 group ${activeFont === font.class ? 'bg-indigo-600 border-indigo-600 text-white shadow-xl scale-105 z-10' : cardBgClasses + ' hover:border-indigo-300'}`}
+                                   className={`p-4 rounded-2xl border transition-all text-sm font-bold flex flex-start items-start gap-1 group ${activeFont === font.class ? 'bg-indigo-600 border-indigo-600 text-white shadow-xl scale-105 z-10' : cardBgClasses + ' hover:border-indigo-300'}`}
                                  >
                                    <span className="text-[10px] opacity-60 uppercase tracking-widest font-black">Font</span>
                                    <span className={`${font.class} text-base`}>{font.name}</span>

@@ -34,46 +34,48 @@ export const generateReflection = async (songTitle: string, lyrics: string[]) =>
 };
 
 /**
- * Explains a Bible verse using Gemini 3 Pro.
- * Optimized with clear section markers for UI parsing.
+ * Explains a Bible verse using Gemini 3 Pro or Flash.
+ * Optimized markers to be simpler and ensure model starts immediately.
  */
 export const explainVerseStream = async (verseReference: string, onChunk: (text: string) => void) => {
   try {
-    const prompt = `Explain "${verseReference}" in Bengali with depth. 
-    Use EXACTLY these section markers followed by content:
+    // Note: Using gemini-3-flash-preview for faster response, 
+    // or gemini-3-pro-preview for deeper thoughts (requires budget).
+    const modelName = 'gemini-3-pro-preview'; 
+    const prompt = `Explain "${verseReference}" in Bengali profoundly.
+    Follow this structure strictly:
+    
+    [[VERSE]]
+    (Full text of the verse)
+    
+    [[CONTEXT]]
+    (Historical context)
+    
+    [[MEANING]]
+    (Deep spiritual meaning)
+    
+    [[APPLICATION]]
+    (Practical application)
+    
+    [[PRAYER]]
+    (A short prayer)
 
-    [VERSE]
-    (Full verse text here)
-
-    [CONTEXT]
-    (Historical/Biblical context)
-
-    [MEANING]
-    (Deep spiritual meaning in bullet points)
-
-    [APPLICATION]
-    (Practical life application)
-
-    [PRAYER]
-    (Short related prayer)
-
-    Keep it professional, deep, and beautifully written in Bengali.`;
+    Do not include any conversational preamble or markdown headers like # or ##. Just the markers and content.`;
     
     const response = await ai.models.generateContentStream({
-      model: 'gemini-3-pro-preview',
+      model: modelName,
       contents: prompt,
       config: {
-        systemInstruction: "You are an elite Bible Scholar. Provide structured, profound explanations in Bengali. Use the provided markers exactly.",
-        thinkingConfig: { thinkingBudget: 2048 },
-        temperature: 0.1, 
+        systemInstruction: "You are an elite Bible Scholar. Output depth-filled Bengali explanations. Start immediately with [[VERSE]]. Use exactly the provided markers in double brackets.",
+        thinkingConfig: { thinkingBudget: 4096 }, // Increased for Pro model stability
+        temperature: 0.2, 
       }
     });
 
     let fullText = '';
     for await (const chunk of response) {
-      const chunkText = chunk.text;
-      if (chunkText) {
-        fullText += chunkText;
+      if (chunk.text) {
+        fullText += chunk.text;
         onChunk(fullText);
       }
     }
