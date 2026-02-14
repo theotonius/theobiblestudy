@@ -10,10 +10,11 @@ import {
   ChevronLeft, ChevronRight, CloudOff, X, Moon, Sun, Coffee, 
   Code2, Github, Globe, Linkedin, Mail, Smartphone, Award, Laptop, Wand2, AlertCircle,
   LogIn, Chrome, Settings, UserCircle, Cpu, Layers, Zap, PhoneCall, Camera,
-  MessageSquare, Send, Users, Database, History, Filter, Calendar, Maximize2, Eraser
+  MessageSquare, Send, Users, Database, History, Filter, Calendar, Maximize2, Eraser,
+  Cloud, CloudLightning, Wifi, WifiOff
 } from 'lucide-react';
 import { fetchSongFromAI, explainVerseStream } from './services/geminiService';
-import { subscribeToMessages, sendChatMessage } from './services/firebaseService';
+import { subscribeToMessages, sendChatMessage, isFirebaseConnected } from './services/firebaseService';
 
 // Custom hook for debouncing search input
 function useDebounce<T>(value: T, delay: number): T {
@@ -92,7 +93,6 @@ const App: React.FC = () => {
     return saved ? JSON.parse(saved) : [];
   });
   
-  // Track IDs of deleted pre-cached studies so they don't reappear
   const [deletedIds, setDeletedIds] = useState<string[]>(() => {
     const saved = localStorage.getItem('sm_deleted_studies');
     return saved ? JSON.parse(saved) : [];
@@ -101,11 +101,7 @@ const App: React.FC = () => {
   const [savedStudies, setSavedStudies] = useState<SavedStudy[]>(() => {
     const saved = localStorage.getItem('sm_saved_studies');
     const userStudies: SavedStudy[] = saved ? JSON.parse(saved) : [];
-    
-    // Initial merge of pre-cached studies
-    const deleted = localStorage.getItem('sm_deleted_studies');
-    const deletedList: string[] = deleted ? JSON.parse(deleted) : [];
-    
+    const deletedList: string[] = deletedIds;
     const combined = [...userStudies];
     PRE_CACHED_STUDIES.forEach(pre => {
       if (!deletedList.includes(pre.id) && !combined.some(s => s.id === pre.id)) {
@@ -124,10 +120,11 @@ const App: React.FC = () => {
     }
   });
 
-  // Fellowship State (Sync with Firebase)
+  // Fellowship State
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const [firebaseLive, setFirebaseLive] = useState(false);
 
   const [isSearchingAI, setIsSearchingAI] = useState(false);
   const [isExplaining, setIsExplaining] = useState(false);
@@ -135,6 +132,16 @@ const App: React.FC = () => {
   const [searchError, setSearchError] = useState<string | null>(null);
   const [isStudySaved, setIsStudySaved] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+
+  // Filtered songs logic
+  const filteredSongs = useMemo(() => {
+    return BIBLE_SONGS.filter(song => {
+      const matchesSearch = song.title.toLowerCase().includes(debouncedLibrarySearch.toLowerCase()) || 
+                           song.reference.toLowerCase().includes(debouncedLibrarySearch.toLowerCase());
+      const matchesCategory = activeCategory === 'All' || song.category === activeCategory;
+      return matchesSearch && matchesCategory;
+    });
+  }, [debouncedLibrarySearch, activeCategory]);
 
   useEffect(() => {
     localStorage.setItem('sm_favorites', JSON.stringify(favorites));
@@ -147,6 +154,7 @@ const App: React.FC = () => {
 
   // Firebase Message Subscription
   useEffect(() => {
+    setFirebaseLive(isFirebaseConnected());
     const unsubscribe = subscribeToMessages((fetchedMessages) => {
       setMessages(fetchedMessages);
     });
@@ -155,7 +163,7 @@ const App: React.FC = () => {
 
   useEffect(() => {
     if (activeTab === AppTab.Chat) {
-      chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
     }
   }, [activeTab, messages]);
 
@@ -163,22 +171,6 @@ const App: React.FC = () => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 3000);
   };
-
-  const allSongs = useMemo(() => BIBLE_SONGS, []);
-
-  // Optimized Filtering Logic
-  const filteredSongs = useMemo(() => {
-    const q = debouncedLibrarySearch.toLowerCase().trim();
-    return allSongs.filter(s => {
-      const categoryMatch = activeCategory === 'All' || s.category.toLowerCase() === activeCategory.toLowerCase();
-      if (!categoryMatch) return false;
-      
-      if (!q) return true;
-      return s.title.toLowerCase().includes(q) || 
-             s.reference.toLowerCase().includes(q) || 
-             s.category.toLowerCase().includes(q);
-    });
-  }, [debouncedLibrarySearch, allSongs, activeCategory]);
 
   const toggleFavorite = (id: string) => {
     if (!user) {
@@ -258,43 +250,13 @@ const App: React.FC = () => {
     showToast("স্টাডি নোটটি মুছে ফেলা হয়েছে।");
   };
 
+  // Clear all studies handler
   const handleClearAllStudies = () => {
-    if (confirm("আপনি কি নিশ্চিত যে আপনি সব সেভ করা স্টাডি মুছে ফেলতে চান?")) {
-      const allPreCachedIds = PRE_CACHED_STUDIES.map(p => p.id);
-      setDeletedIds(prev => Array.from(new Set([...prev, ...allPreCachedIds])));
+    if (confirm("আপনি কি সব স্টাডি নোট মুছে ফেলতে চান?")) {
+      const allPreIds = PRE_CACHED_STUDIES.map(s => s.id);
+      setDeletedIds(prev => Array.from(new Set([...prev, ...allPreIds])));
       setSavedStudies([]);
-      setSelectedSavedStudy(null);
-      showToast("সব স্টাডি মুছে ফেলা হয়েছে।");
-    }
-  };
-
-  const handleShareStudy = async (study?: SavedStudy) => {
-    const reference = study ? study.reference : studyQuery;
-    const content = study ? study.content : verseExplanation;
-
-    if (!content || !reference) return;
-    
-    const shareText = `📖 Bible Discovery 📖\n\n📍 ${reference}\n\n${content}\n\nShared via Sacred Melodies App`;
-    
-    try {
-      if (navigator.share) {
-        await navigator.share({
-          title: `Bible Study: ${reference}`,
-          text: shareText,
-          url: window.location.protocol.startsWith('http') ? window.location.href : undefined
-        });
-      } else {
-        await navigator.clipboard.writeText(shareText);
-        showToast("ক্লিপবোর্ডে কপি হয়েছে।");
-      }
-    } catch (err) {
-      console.error("Share failed:", err);
-      try {
-        await navigator.clipboard.writeText(shareText);
-        showToast("ক্লিপবোর্ডে কপি হয়েছে।");
-      } catch (clipErr) {
-        showToast("শেয়ার করা সম্ভব হয়নি।", "error");
-      }
+      showToast("সব স্টাডি নোট মুছে ফেলা হয়েছে।");
     }
   };
 
@@ -343,7 +305,6 @@ const App: React.FC = () => {
               <p className="text-[10px] opacity-40 uppercase tracking-widest mt-1">Saved Reflection</p>
            </div>
            <div className="flex items-center gap-2">
-              <button onClick={() => handleShareStudy(selectedSavedStudy)} className="p-3 rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-all"><Share2 className="w-6 h-6" /></button>
               <button onClick={() => { if(confirm("এই স্টাডি নোটটি মুছে ফেলতে চান?")) { handleDeleteStudy(selectedSavedStudy.id); } }} className="p-3 rounded-2xl text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-all"><Trash2 className="w-6 h-6" /></button>
            </div>
         </header>
@@ -421,9 +382,8 @@ const App: React.FC = () => {
                   <p className="text-lg opacity-80 font-medium">আপনার পছন্দের গানের সংগ্রহ। সার্চ করুন মুহূর্তেই।</p>
                 </div>
                 
-                {/* Enhanced Search & Filter Section */}
                 <div className="w-full md:w-auto flex flex-col items-center md:items-end gap-6">
-                  <div className="relative w-full max-w-sm">
+                  <div className="relative w-full max-sm">
                     <input 
                       type="text" 
                       value={searchQuery}
@@ -462,10 +422,18 @@ const App: React.FC = () => {
                      <div className="w-12 h-12 bg-indigo-600 rounded-2xl flex items-center justify-center text-white shadow-lg"><Users className="w-6 h-6" /></div>
                      <div>
                         <h2 className="font-black text-xl tracking-tight">Public Fellowship</h2>
-                        <div className="flex items-center gap-2 mt-1"><div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" /><span className="text-[10px] font-bold opacity-50 uppercase tracking-widest">Global • Online (Firebase Sync)</span></div>
+                        <div className="flex items-center gap-3 mt-1">
+                           <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-wider ${firebaseLive ? 'bg-emerald-500/10 text-emerald-500' : 'bg-amber-500/10 text-amber-500'}`}>
+                             {firebaseLive ? <Cloud className="w-3 h-3" /> : <WifiOff className="w-3 h-3" />}
+                             {firebaseLive ? 'Live Sync' : 'Local Mode'}
+                           </div>
+                           <span className="text-[10px] font-bold opacity-30 uppercase tracking-widest">{firebaseLive ? 'Firebase Active' : 'Offline Storage'}</span>
+                        </div>
                      </div>
                   </div>
-                  <Database className="w-6 h-6 opacity-30 cursor-help" />
+                  <button onClick={() => showToast(firebaseLive ? "You are connected to Global Chat." : "Configure Firebase to chat with everyone.")} className="p-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-all">
+                    <Database className={`w-6 h-6 ${firebaseLive ? 'text-indigo-500' : 'opacity-20'}`} />
+                  </button>
                </div>
                <div className={`flex-1 overflow-y-auto p-6 space-y-6 ${theme === Theme.Dark ? 'bg-slate-900/30' : 'bg-slate-50/50'}`}>
                   {messages.length > 0 ? messages.map((msg) => {
@@ -516,7 +484,6 @@ const App: React.FC = () => {
                       {!isExplaining && verseExplanation && (
                         <div className="flex flex-wrap items-center gap-4 pt-8 mt-8 border-t border-slate-100 dark:border-slate-700/50">
                            <button onClick={handleSaveStudy} disabled={isStudySaved} className={`flex items-center gap-3 px-6 py-4 rounded-2xl border transition-all ${isStudySaved ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-slate-50 border-slate-200 text-slate-600 hover:scale-105 active:scale-95'}`}>{isStudySaved ? <Check className="w-5 h-5" /> : <Bookmark className="w-5 h-5" />}<span className="text-xs font-black uppercase tracking-widest">{isStudySaved ? 'সেভ করা আছে' : 'সেভ করুন'}</span></button>
-                           <button onClick={handleShareStudy as any} className={`flex items-center gap-3 px-6 py-4 rounded-2xl border transition-all hover:scale-105 active:scale-95 ${theme === Theme.Dark ? 'bg-slate-900 border-slate-500 text-white' : 'bg-slate-50 border-slate-200 text-slate-600'}`}><Share2 className="w-5 h-5" /><span className="text-xs font-black uppercase tracking-widest">শেয়ার করুন</span></button>
                         </div>
                       )}
                    </div>
@@ -551,7 +518,6 @@ const App: React.FC = () => {
                           {study.content}
                         </div>
                         <div className="flex items-center gap-3 pt-6 border-t border-slate-100 dark:border-slate-700/50">
-                           <button onClick={(e) => { e.stopPropagation(); handleShareStudy(study); }} className={`flex-1 py-3 rounded-xl border flex items-center justify-center gap-2 font-black text-[10px] uppercase tracking-widest transition-all active:scale-95 ${theme === Theme.Dark ? 'bg-slate-900 border-slate-700' : 'bg-slate-50 border-slate-200'}`}><Share2 className="w-4 h-4" /> SHARE</button>
                            <button onClick={(e) => { e.stopPropagation(); if(confirm("এই স্টাডি নোটটি মুছে ফেলতে চান?")) { handleDeleteStudy(study.id); } }} className="p-3 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-xl transition-all"><Trash2 className="w-5 h-5" /></button>
                            <button className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-indigo-600">READ FULL <Maximize2 className="w-4 h-4" /></button>
                         </div>
@@ -589,7 +555,6 @@ const App: React.FC = () => {
                     <div className={`w-28 h-28 mx-auto rounded-[2.5rem] flex items-center justify-center text-white bg-indigo-600 shadow-2xl shadow-indigo-100`}><LogIn className="w-12 h-12" /></div>
                     <div className="space-y-4">
                       <button onClick={() => setShowLoginModal(true)} className={`w-full py-5 px-8 rounded-3xl border font-black text-sm flex items-center justify-center gap-4 transition-all hover:shadow-xl active:scale-95 ${theme === Theme.Dark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-slate-200'}`}><Chrome className="w-6 h-6 text-rose-500" /> CONTINUE WITH GMAIL</button>
-                      <button onClick={() => { setUser({ name: 'Facebook User', email: 'fb.user@example.com', photo: `https://api.dicebear.com/7.x/avataaars/svg?seed=fb` }); setActiveTab(AppTab.Library); }} className="w-full py-5 px-8 bg-[#1877F2] text-white rounded-3xl font-black text-sm flex items-center justify-center gap-4 transition-all hover:bg-[#166fe5] active:scale-95"><Facebook className="w-6 h-6" /> CONTINUE WITH FACEBOOK</button>
                     </div>
                   </div>
                 )}
@@ -603,7 +568,7 @@ const App: React.FC = () => {
                   <div className="relative z-10 px-6 py-12 md:p-16 flex flex-col items-center text-center">
                      <div className="relative mb-8">
                        <div className="w-48 h-48 md:w-56 md:h-56 rounded-[3.5rem] p-1.5 bg-gradient-to-tr from-indigo-600 via-purple-500 to-indigo-400 shadow-2xl overflow-hidden relative">
-                         <img src="theotonius.jpg" className="w-full h-full object-cover rounded-[3rem]" alt="Sobuj Biswas" />
+                         <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Theotonius" className="w-full h-full object-cover rounded-[3rem]" alt="Sobuj Biswas" />
                        </div>
                        <div className="absolute -bottom-3 -right-3 w-14 h-14 bg-white dark:bg-slate-900 rounded-2xl flex items-center justify-center border-4 border-[#fafafa] dark:border-slate-800 shadow-xl"><Zap className="w-6 h-6 text-indigo-600 animate-pulse" /></div>
                      </div>
@@ -620,10 +585,7 @@ const App: React.FC = () => {
                            </div>
                         </a>
                         <div className="grid grid-cols-4 gap-3">
-                           <a href="https://github.com" target="_blank" rel="noreferrer" className={`p-5 rounded-[2rem] border flex items-center justify-center transition-all hover:bg-slate-900 hover:text-white ${cardBgClasses}`}><Github className="w-6 h-6" /></a>
-                           <a href="https://linkedin.com" target="_blank" rel="noreferrer" className={`p-5 rounded-[2rem] border flex items-center justify-center transition-all hover:bg-[#0077b5] hover:text-white ${cardBgClasses}`}><Linkedin className="w-6 h-6" /></a>
                            <a href="mailto:theotonius2012@gmail.com" className={`p-5 rounded-[2rem] border flex items-center justify-center transition-all hover:bg-rose-500 hover:text-white ${cardBgClasses}`}><Mail className="w-6 h-6" /></a>
-                           <a href="#" target="_blank" rel="noreferrer" className={`p-5 rounded-[2rem] border flex items-center justify-center transition-all hover:bg-emerald-500 hover:text-white ${cardBgClasses}`}><Globe className="w-6 h-6" /></a>
                         </div>
                      </div>
                   </div>
