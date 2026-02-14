@@ -11,7 +11,7 @@ import {
   Code2, Github, Globe, Linkedin, Mail, Smartphone, Award, Laptop, Wand2, AlertCircle,
   LogIn, Chrome, Settings, UserCircle, Cpu, Layers, Zap, PhoneCall, Camera,
   MessageSquare, Send, Users, Database, History, Filter, Calendar, Maximize2, Eraser,
-  Cloud, CloudLightning, Wifi, WifiOff, Type as FontIcon
+  Cloud, CloudLightning, Wifi, WifiOff, Type as FontIcon, Quote, ScrollText, Gem, Sprout, HandHelping
 } from 'lucide-react';
 import { fetchSongFromAI, explainVerseStream } from './services/geminiService';
 import { subscribeToMessages, sendChatMessage, isFirebaseConnected } from './services/firebaseService';
@@ -329,6 +329,61 @@ const App: React.FC = () => {
   const textTitleClasses = theme === Theme.Dark ? 'text-white' : theme === Theme.Sepia ? 'text-[#433422]' : 'text-slate-900';
   const textMutedClasses = theme === Theme.Dark ? 'text-slate-300' : theme === Theme.Sepia ? 'text-[#8b6d4d]' : 'text-slate-500';
 
+  /**
+   * Helper to parse and render structured verse explanations
+   */
+  const renderFormattedExplanation = (text: string) => {
+    if (!text) return null;
+    
+    const sections = [
+      { key: '[VERSE]', label: 'মূল পাঠ ও অনুবাদ', icon: <Quote className="w-5 h-5" />, color: 'indigo' },
+      { key: '[CONTEXT]', label: 'ঐতিহাসিক প্রেক্ষাপট', icon: <ScrollText className="w-5 h-5" />, color: 'amber' },
+      { key: '[MEANING]', label: 'গভীর আধ্যাত্মিক অর্থ', icon: <Gem className="w-5 h-5" />, color: 'emerald' },
+      { key: '[APPLICATION]', label: 'আমাদের জীবনে প্রয়োগ', icon: <Sprout className="w-5 h-5" />, color: 'rose' },
+      { key: '[PRAYER]', label: 'একটি প্রার্থনা', icon: <HandHelping className="w-5 h-5" />, color: 'purple' },
+    ];
+
+    let currentText = text;
+    return (
+      <div className="space-y-8 text-left animate-fadeIn">
+        {sections.map((section, idx) => {
+          const startIndex = currentText.indexOf(section.key);
+          if (startIndex === -1) return null;
+          
+          let content = '';
+          const nextSection = sections.find((s, i) => i > idx && currentText.indexOf(s.key) !== -1);
+          if (nextSection) {
+            content = currentText.substring(startIndex + section.key.length, currentText.indexOf(nextSection.key)).trim();
+          } else {
+            content = currentText.substring(startIndex + section.key.length).trim();
+          }
+
+          if (!content) return null;
+
+          return (
+            <div key={section.key} className={`p-8 rounded-[2.5rem] border shadow-sm transition-all hover:shadow-md ${cardBgClasses} group`}>
+              <div className="flex items-center gap-4 mb-6">
+                 <div className={`p-4 rounded-2xl bg-${section.color}-500/10 text-${section.color}-600 dark:bg-${section.color}-500/20 shadow-inner group-hover:rotate-6 transition-transform`}>
+                    {section.icon}
+                 </div>
+                 <h3 className={`text-xl font-black tracking-tight ${textTitleClasses}`}>{section.label}</h3>
+              </div>
+              <div className={`text-lg md:text-xl leading-relaxed whitespace-pre-wrap ${theme === Theme.Dark ? 'text-slate-200' : 'text-slate-700 font-medium'}`}>
+                 {content}
+              </div>
+            </div>
+          );
+        })}
+        {/* Fallback for unstructured text */}
+        {!sections.some(s => text.includes(s.key)) && (
+          <div className={`p-8 rounded-[2.5rem] border shadow-sm ${cardBgClasses} whitespace-pre-wrap text-xl leading-relaxed`}>
+            {text}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   if (showSplash) return <SplashScreen onFinish={() => setShowSplash(false)} />;
 
   if (selectedSong && activeTab === AppTab.Reader) {
@@ -357,9 +412,7 @@ const App: React.FC = () => {
            </div>
         </header>
         <main className="flex-1 max-w-4xl mx-auto w-full px-8 py-12 md:py-20">
-           <article className={`whitespace-pre-wrap text-xl md:text-3xl leading-relaxed ${theme === Theme.Dark ? 'text-slate-100' : ''}`}>
-             {selectedSavedStudy.content}
-           </article>
+           {renderFormattedExplanation(selectedSavedStudy.content)}
         </main>
       </div>
     );
@@ -470,18 +523,47 @@ const App: React.FC = () => {
 
           {activeTab === AppTab.Study && (
              <div className="max-w-4xl mx-auto space-y-12 py-10 text-center">
-                <div className="space-y-6"><div className="w-24 h-24 bg-indigo-600 text-white rounded-[2rem] flex items-center justify-center mx-auto shadow-2xl shadow-indigo-200"><BookOpen className="w-12 h-12" /></div><div className="space-y-2"><h2 className="text-4xl md:text-5xl font-black tracking-tight">Bible Discovery</h2><p className="opacity-80 text-lg font-medium">পদের ব্যাখ্যা দেখতে সার্চ করুন। এটি এখন আরও দ্রুত!</p></div></div>
-                <div className="relative group max-w-2xl mx-auto"><input type="text" placeholder="যোহন ৩:১৬..." value={studyQuery} onChange={(e) => setStudyQuery(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleStudySearch()} className={`w-full py-6 px-10 rounded-[3rem] border text-xl transition-all shadow-2xl ${theme === Theme.Dark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-slate-200'}`} /><button onClick={handleStudySearch} disabled={isExplaining} className="absolute right-4 top-1/2 -translate-y-1/2 p-5 bg-indigo-600 text-white rounded-full shadow-xl disabled:opacity-50">{isExplaining ? <Loader2 className="w-6 h-6 animate-spin" /> : <Search className="w-6 h-6" />}</button></div>
+                <div className="space-y-6"><div className="w-24 h-24 bg-indigo-600 text-white rounded-[2rem] flex items-center justify-center mx-auto shadow-2xl shadow-indigo-200"><BookOpen className="w-12 h-12" /></div><div className="space-y-2"><h2 className="text-4xl md:text-5xl font-black tracking-tight">Bible Discovery</h2><p className="opacity-80 text-lg font-medium">পদের গভীর ব্যাখ্যা ও অর্থ দেখতে সার্চ করুন।</p></div></div>
+                <div className="relative group max-w-2xl mx-auto">
+                   <input 
+                     type="text" 
+                     placeholder="যোহন ৩:১৬..." 
+                     value={studyQuery} 
+                     onChange={(e) => setStudyQuery(e.target.value)} 
+                     onKeyDown={(e) => e.key === 'Enter' && handleStudySearch()} 
+                     className={`w-full py-6 px-10 rounded-[3rem] border text-xl transition-all shadow-2xl animate-focus-glow ${theme === Theme.Dark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-slate-200'}`} 
+                   />
+                   <button 
+                     onClick={handleStudySearch} 
+                     disabled={isExplaining} 
+                     className="absolute right-4 top-1/2 -translate-y-1/2 p-5 bg-indigo-600 text-white rounded-full shadow-xl disabled:opacity-50 hover:scale-105 active:scale-95 transition-all"
+                   >
+                     {isExplaining ? <Loader2 className="w-6 h-6 animate-spin" /> : <Search className="w-6 h-6" />}
+                   </button>
+                </div>
+
                 {(verseExplanation || isExplaining) && (
-                   <div className={`p-8 md:p-14 rounded-[3.5rem] border shadow-2xl text-left page-transition ${cardBgClasses}`}>
-                      <div className={`whitespace-pre-wrap text-xl md:text-2xl leading-relaxed ${theme === Theme.Dark ? 'text-slate-100' : ''}`}>
-                        {verseExplanation || (isExplaining && "ব্যাখ্যা তৈরি হচ্ছে...")}
-                      </div>
-                      {!isExplaining && verseExplanation && (
-                        <div className="flex flex-wrap items-center gap-4 pt-8 mt-8 border-t border-slate-100 dark:border-slate-700/50">
-                           <button onClick={handleSaveStudy} disabled={isStudySaved} className={`flex items-center gap-3 px-6 py-4 rounded-2xl border transition-all ${isStudySaved ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-slate-50 border-slate-200 text-slate-600 hover:scale-105 active:scale-95'}`}>{isStudySaved ? <Check className="w-5 h-5" /> : <Bookmark className="w-5 h-5" />}<span className="text-xs font-black uppercase tracking-widest">{isStudySaved ? 'সেভ করা আছে' : 'সেভ করুন'}</span></button>
-                           <button onClick={handleShareStudy} className={`flex items-center gap-3 px-6 py-4 rounded-2xl border transition-all ${isStudyShared ? 'bg-indigo-50 text-indigo-600 border-indigo-100' : 'bg-slate-50 border-slate-200 text-slate-600 hover:scale-105 active:scale-95'}`}><Share2 className="w-5 h-5" /><span className="text-xs font-black uppercase tracking-widest">শেয়ার করুন</span></button>
-                        </div>
+                   <div className="space-y-8">
+                      {isExplaining && !verseExplanation ? (
+                         <div className={`p-16 rounded-[3.5rem] border shadow-2xl ${cardBgClasses} animate-pulse flex flex-col items-center gap-6`}>
+                            <Loader2 className="w-12 h-12 animate-spin text-indigo-600" />
+                            <p className="font-black text-xs uppercase tracking-[0.3em] opacity-40">Gemini is searching scriptures...</p>
+                         </div>
+                      ) : (
+                        <>
+                          {renderFormattedExplanation(verseExplanation || '')}
+                          
+                          <div className={`flex flex-wrap items-center justify-center gap-4 p-8 rounded-[3rem] border ${cardBgClasses} shadow-xl animate-fadeIn`}>
+                             <button onClick={handleSaveStudy} disabled={isStudySaved} className={`flex items-center gap-3 px-8 py-5 rounded-2xl border transition-all ${isStudySaved ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-slate-50 border-slate-200 text-slate-600 hover:scale-105 active:scale-95'}`}>
+                                {isStudySaved ? <Check className="w-6 h-6" /> : <Bookmark className="w-6 h-6" />}
+                                <span className="text-xs font-black uppercase tracking-widest">{isStudySaved ? 'সেভ করা আছে' : 'সেভ করুন'}</span>
+                             </button>
+                             <button onClick={handleShareStudy} className={`flex items-center gap-3 px-8 py-5 rounded-2xl border transition-all ${isStudyShared ? 'bg-indigo-50 text-indigo-600 border-indigo-100' : 'bg-slate-50 border-slate-200 text-slate-600 hover:scale-105 active:scale-95'}`}>
+                                <Share2 className="w-6 h-6" />
+                                <span className="text-xs font-black uppercase tracking-widest">শেয়ার করুন</span>
+                             </button>
+                          </div>
+                        </>
                       )}
                    </div>
                 )}

@@ -15,12 +15,15 @@ async function withRetry<T>(fn: () => Promise<T>, retries = 2, delay = 1000): Pr
 
 export const generateReflection = async (songTitle: string, lyrics: string[]) => {
   return withRetry(async () => {
-    const prompt = `Based on the lyrics of the Bible song "${songTitle}", provide a short spiritual reflection and a related Bible verse. Lyrics: ${lyrics.join(' ')}`;
+    const prompt = `Based on the lyrics of the Bible song "${songTitle}", provide a short spiritual reflection and a related Bible verse in Bengali. 
+    Structure:
+    - **প্রতিফলন**: [Short meaningful text]
+    - **সংশ্লিষ্ট পদ**: [Verse]`;
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
       contents: prompt,
       config: {
-        systemInstruction: "You are a thoughtful spiritual guide. Keep reflections brief, encouraging, and centered on the themes of the song provided."
+        systemInstruction: "You are a thoughtful spiritual guide providing short, encouraging reflections in Bengali."
       }
     });
     return response.text;
@@ -30,22 +33,39 @@ export const generateReflection = async (songTitle: string, lyrics: string[]) =>
   });
 };
 
+/**
+ * Explains a Bible verse using Gemini 3 Pro.
+ * Optimized with clear section markers for UI parsing.
+ */
 export const explainVerseStream = async (verseReference: string, onChunk: (text: string) => void) => {
   try {
-    // Optimized for speed and clear structure
-    const prompt = `Explain "${verseReference}" in Bengali. Use exactly this format:
-    📌 **পদটি:** [Verse Text]
-    📜 **প্রেক্ষাপট:** [Short Context]
-    💎 **গভীর অর্থ:** [Deep Meaning in 3-4 bullet points]
-    🌱 **জীবনের প্রয়োগ:** [Practical Application]`;
+    const prompt = `Explain "${verseReference}" in Bengali with depth. 
+    Use EXACTLY these section markers followed by content:
+
+    [VERSE]
+    (Full verse text here)
+
+    [CONTEXT]
+    (Historical/Biblical context)
+
+    [MEANING]
+    (Deep spiritual meaning in bullet points)
+
+    [APPLICATION]
+    (Practical life application)
+
+    [PRAYER]
+    (Short related prayer)
+
+    Keep it professional, deep, and beautifully written in Bengali.`;
     
     const response = await ai.models.generateContentStream({
-      model: 'gemini-3-flash-preview',
+      model: 'gemini-3-pro-preview',
       contents: prompt,
       config: {
-        systemInstruction: "You are an expert biblical scholar. Provide structured, deep, and rapid explanations in Bengali. No conversational filler.",
-        thinkingConfig: { thinkingBudget: 0 },
-        temperature: 0.2 // Lower temperature for more consistent, faster results
+        systemInstruction: "You are an elite Bible Scholar. Provide structured, profound explanations in Bengali. Use the provided markers exactly.",
+        thinkingConfig: { thinkingBudget: 2048 },
+        temperature: 0.1, 
       }
     });
 
@@ -68,7 +88,7 @@ export const fetchSongFromAI = async (query: string) => {
   return withRetry(async () => {
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
-      contents: `Find the lyrics for the Bible song or hymn: "${query}". Return as JSON with title, reference, category (Worship/Praise/Hymn/Kids), and lyrics array.`,
+      contents: `Find the lyrics for the Bible song: "${query}". Return as JSON.`,
       config: {
         responseMimeType: "application/json",
         responseSchema: {
