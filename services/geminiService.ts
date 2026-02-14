@@ -34,38 +34,39 @@ export const generateReflection = async (songTitle: string, lyrics: string[]) =>
 };
 
 /**
- * Explains a Bible verse with depth and beautiful structure.
+ * Explains a Bible verse using Gemini 3 Pro.
+ * Optimized for speed and depth by fixing the token budget conflict.
  */
 export const explainVerseStream = async (verseReference: string, onChunk: (text: string) => void) => {
   try {
-    const prompt = `Explain the Bible verse "${verseReference}" in Bengali with great depth. 
-    Use this EXACT structure with clear headings:
+    const prompt = `Explain the Bible verse "${verseReference}" in Bengali with professional depth.
+    Use this EXACT structure with clear headers:
 
     📖 **মূল পাঠ ও অনুবাদ**
-    [বাংলা অনুবাদ ও সাধারণ অর্থ]
+    [সরাসরি অনুবাদ]
 
     📜 **ঐতিহাসিক প্রেক্ষাপট**
-    [কখন এবং কেন এটি বলা হয়েছিল]
+    [সংক্ষিপ্ত কিন্তু তথ্যবহুল প্রেক্ষাপট]
 
     💎 **আধ্যাত্মিক মুক্তো (গভীর অর্থ)**
-    [৩-৪টি গভীর পয়েন্ট যেখানে মূল গ্রীক/হিব্রু শব্দের ভাবার্থ থাকবে]
+    [৩টি গুরুত্বপূর্ণ গভীর পয়েন্ট]
 
     🌱 **আমাদের জীবনে প্রয়োগ**
-    [দৈনন্দিন জীবনে কীভাবে কাজ করবে]
+    [বাস্তব জীবনে চলার গাইডলাইন]
 
     🙏 **একটি প্রার্থনা**
-    [পদটির ওপর ভিত্তি করে ছোট সুন্দর প্রার্থনা]
+    [পদটির ওপর ভিত্তি করে সংক্ষিপ্ত প্রার্থনা]
 
-    Ensure high-quality, scholarly yet touching language.`;
+    Keep it concise and profound. Start immediately with the first heading.`;
     
     const response = await ai.models.generateContentStream({
       model: 'gemini-3-pro-preview',
       contents: prompt,
       config: {
-        systemInstruction: "You are a world-class Bible Scholar. Provide profound, structured, and beautiful verse explanations in Bengali. Use sophisticated yet readable language.",
-        thinkingConfig: { thinkingBudget: 8192 },
-        temperature: 0.2,
-        maxOutputTokens: 3000
+        systemInstruction: "You are a world-class Bible Scholar. Provide profound, structured Bengali explanations. Start streaming results immediately. Do not use intro text.",
+        // Setting a balanced thinking budget without maxOutputTokens to avoid the previous error
+        thinkingConfig: { thinkingBudget: 2048 },
+        temperature: 0.2
       }
     });
 
