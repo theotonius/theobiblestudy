@@ -11,10 +11,15 @@ import {
   Code2, Github, Globe, Linkedin, Mail, Smartphone, Award, Laptop, Wand2, AlertCircle,
   LogIn, Chrome, Settings, UserCircle, Cpu, Layers, Zap, PhoneCall, Camera,
   MessageSquare, Send, Users, Database, History, Filter, Calendar, Maximize2, Eraser,
-  Cloud, CloudLightning, Wifi, WifiOff, Type as FontIcon, Quote, ScrollText, Gem, Sprout, HandHelping
+  Cloud, CloudLightning, Wifi, WifiOff, Type as FontIcon, Quote, ScrollText, Gem, Sprout, HandHelping, ExternalLink
 } from 'lucide-react';
 import { fetchSongFromAI, explainVerseStream } from './services/geminiService';
 import { subscribeToMessages, sendChatMessage, isFirebaseConnected } from './services/firebaseService';
+
+// Helper to strip markers for clean snippets in the list view
+const stripMarkers = (text: string) => {
+  return text.replace(/\[\[.*?\]\]/g, '').trim();
+};
 
 // Custom hook for debouncing search input
 function useDebounce<T>(value: T, delay: number): T {
@@ -141,6 +146,7 @@ const App: React.FC = () => {
 
   const [isExplaining, setIsExplaining] = useState(false);
   const [verseExplanation, setVerseExplanation] = useState<string | null>(null);
+  const [groundingSources, setGroundingSources] = useState<any[]>([]);
   const [isStudySaved, setIsStudySaved] = useState(false);
   const [isStudyShared, setIsStudyShared] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
@@ -224,17 +230,30 @@ const App: React.FC = () => {
     if (!studyQuery.trim()) return;
     setIsExplaining(true);
     setVerseExplanation(""); 
+    setGroundingSources([]);
     setIsStudySaved(false);
     setIsStudyShared(false);
+    
     try {
-      await explainVerseStream(studyQuery, (chunk) => {
+      let chunkCount = 0;
+      await explainVerseStream(studyQuery, (chunk, sources) => {
         setVerseExplanation(chunk);
-        // Initially set isExplaining to false once we get the first chunk
-        // but keep the loading state inside the UI if needed
-        setIsExplaining(false);
+        if (sources && sources.length > 0) {
+          setGroundingSources(sources);
+        }
+        chunkCount++;
+        // Hide loader immediately on first real chunk of text
+        if (chunkCount > 0 && isExplaining) {
+          setIsExplaining(false);
+        }
       });
-    } catch (error) {
-      setVerseExplanation("দুঃখিত, ব্যাখ্যা লোড করা সম্ভব হয়নি।");
+    } catch (error: any) {
+      console.error("Search Error:", error);
+      const errorMsg = "দুঃখিত, তথ্য লোড করা সম্ভব হয়নি। অনুগ্রহ করে পদের নাম সঠিকভাবে লিখুন (উদা: যোহন ৩:১৬)।";
+      setVerseExplanation(errorMsg);
+      setIsExplaining(false);
+      showToast("অনুসন্ধান ব্যর্থ হয়েছে", "error");
+    } finally {
       setIsExplaining(false);
     }
   };
@@ -331,8 +350,7 @@ const App: React.FC = () => {
   const textMutedClasses = theme === Theme.Dark ? 'text-slate-300' : theme === Theme.Sepia ? 'text-[#8b6d4d]' : 'text-slate-500';
 
   /**
-   * Enhanced rendering for structured verse explanations.
-   * Uses case-insensitive regex for more robust marker finding.
+   * Rendering for verse explanations with section markers turned into clean UI.
    */
   const renderFormattedExplanation = (text: string) => {
     if (!text) return null;
@@ -345,11 +363,8 @@ const App: React.FC = () => {
       { key: '[[PRAYER]]', label: 'একটি প্রার্থনা', icon: <HandHelping className="w-5 h-5" />, color: 'purple' },
     ];
 
-    // Find occurrences of any markers (case-insensitive)
-    const normalizedText = text.replace(/\[\[/g, ' [[').replace(/\]\]/g, ']] ');
-    
-    // If no markers found yet, show raw text in a nice container (for initial streaming)
-    if (!sections.some(s => text.toUpperCase().includes(s.key.toUpperCase()))) {
+    const upperText = text.toUpperCase();
+    if (!sections.some(s => upperText.includes(s.key))) {
       return (
         <div className={`p-8 rounded-[2.5rem] border shadow-sm ${cardBgClasses} whitespace-pre-wrap text-xl leading-relaxed text-left animate-fadeIn`}>
           {text}
@@ -360,18 +375,14 @@ const App: React.FC = () => {
     return (
       <div className="space-y-8 text-left animate-fadeIn">
         {sections.map((section, idx) => {
-          const upperText = text.toUpperCase();
-          const markerUpper = section.key.toUpperCase();
-          const startIndex = upperText.indexOf(markerUpper);
-          
+          const startIndex = upperText.indexOf(section.key);
           if (startIndex === -1) return null;
           
           let content = '';
-          // Find the next available section marker to know where this one ends
           let nextMarkerIndex = -1;
           sections.forEach((s, i) => {
             if (i > idx) {
-              const pos = upperText.indexOf(s.key.toUpperCase());
+              const pos = upperText.indexOf(s.key);
               if (pos !== -1 && (nextMarkerIndex === -1 || pos < nextMarkerIndex)) {
                 nextMarkerIndex = pos;
               }
@@ -389,7 +400,7 @@ const App: React.FC = () => {
           return (
             <div key={section.key} className={`p-8 rounded-[2.5rem] border shadow-sm transition-all hover:shadow-md ${cardBgClasses} group overflow-hidden relative`}>
               <div className="absolute top-0 right-0 p-8 opacity-5 -mr-4 -mt-4 transform rotate-12 group-hover:rotate-0 transition-transform">
-                {React.cloneElement(section.icon as React.ReactElement, { className: 'w-24 h-24' })}
+                {React.cloneElement(section.icon as React.ReactElement<any>, { className: 'w-24 h-24' })}
               </div>
               <div className="flex items-center gap-4 mb-6 relative z-10">
                  <div className={`p-4 rounded-2xl bg-${section.color}-500/10 text-${section.color}-600 dark:bg-${section.color}-500/20 shadow-inner group-hover:scale-110 transition-transform`}>
@@ -403,6 +414,25 @@ const App: React.FC = () => {
             </div>
           );
         })}
+
+        {groundingSources.length > 0 && (
+          <div className={`p-8 rounded-[2.5rem] border shadow-sm ${cardBgClasses} space-y-4 border-indigo-200 dark:border-indigo-900/40 bg-indigo-50/10`}>
+             <div className="flex items-center gap-3 opacity-60">
+                <Globe className="w-5 h-5 text-indigo-500" />
+                <h4 className="text-xs font-black uppercase tracking-widest text-indigo-600">তথ্যসূত্র এবং সোর্স</h4>
+             </div>
+             <div className="flex flex-wrap gap-2">
+                {groundingSources.map((src, i) => (
+                  src.web && (
+                    <a key={i} href={src.web.uri} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-5 py-3 bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 rounded-2xl text-[10px] font-black shadow-sm hover:shadow-md hover:bg-indigo-600 hover:text-white transition-all border border-indigo-100 dark:border-indigo-900/30">
+                       <ExternalLink className="w-3 h-3" />
+                       {src.web.title || 'সোর্স'}
+                    </a>
+                  )
+                ))}
+             </div>
+          </div>
+        )}
       </div>
     );
   };
@@ -428,7 +458,7 @@ const App: React.FC = () => {
            <button onClick={() => setSelectedSavedStudy(null)} className="p-3 rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-all"><ChevronLeft className="w-6 h-6" /></button>
            <div className="text-center">
               <h2 className="text-sm font-black leading-none">{selectedSavedStudy.reference}</h2>
-              <p className="text-[10px] opacity-40 uppercase tracking-widest mt-1">Saved Reflection</p>
+              <p className="text-[10px] opacity-40 uppercase tracking-widest mt-1">Detailed Study</p>
            </div>
            <div className="flex items-center gap-2">
               <button onClick={() => { if(confirm("এই স্টাডি নোটটি মুছে ফেলতে চান?")) { handleDeleteStudy(selectedSavedStudy.id); } }} className="p-3 rounded-2xl text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-all"><Trash2 className="w-6 h-6" /></button>
@@ -461,7 +491,7 @@ const App: React.FC = () => {
               </div>
               <div className="space-y-4">
                 <button onClick={() => !isLoggingIn && simulateSocialLogin('google')} disabled={!!isLoggingIn} className={`w-full py-5 px-8 rounded-3xl border font-black text-sm flex items-center justify-center gap-4 transition-all shadow-lg active:scale-95 bg-white border-slate-100 hover:bg-slate-50 text-slate-700 relative overflow-hidden`}>{isLoggingIn === 'google' ? <Loader2 className="w-6 h-6 animate-spin text-indigo-600" /> : <><Chrome className="w-6 h-6 text-rose-500" /> CONTINUE WITH GOOGLE</>}{isLoggingIn === 'google' && <div className="absolute inset-0 bg-white/60 backdrop-blur-sm flex items-center justify-center text-[10px] font-black text-indigo-600 uppercase tracking-widest">Connecting...</div>}</button>
-                <button onClick={() => !isLoggingIn && simulateSocialLogin('facebook')} disabled={!!isLoggingIn} className={`w-full py-5 px-8 rounded-3xl font-black text-sm flex items-center justify-center gap-4 transition-all shadow-lg active:scale-95 bg-[#1877F2] text-white hover:bg-[#166fe5] border-none relative overflow-hidden`}>{isLoggingIn === 'facebook' ? <Loader2 className="w-6 h-6 animate-spin" /> : <><Facebook className="w-6 h-6 fill-current" /> CONTINUE WITH FACEBOOK</>}{isLoggingIn === 'facebook' && <div className="absolute inset-0 bg-[#1877F2]/60 backdrop-blur-sm flex items-center justify-center text-[10px] font-black uppercase tracking-widest">Connecting...</div>}</button>
+                <button onClick={() => !isLoggingIn && simulateSocialLogin('facebook')} disabled={!!isLoggingIn} className={`w-full py-5 px-8 rounded-3xl font-black text-sm flex items-center justify-center gap-4 transition-all shadow-lg active:scale-95 bg-[#1877F2] text-white border-none relative overflow-hidden`}>{isLoggingIn === 'facebook' ? <Loader2 className="w-6 h-6 animate-spin" /> : <><Facebook className="w-6 h-6 fill-current" /> CONTINUE WITH FACEBOOK</>}{isLoggingIn === 'facebook' && <div className="absolute inset-0 bg-[#1877F2]/60 backdrop-blur-sm flex items-center justify-center text-[10px] font-black uppercase tracking-widest">Connecting...</div>}</button>
               </div>
               <div className="text-center"><p className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">Secure Login via Official Auth</p></div>
             </div>
@@ -546,7 +576,7 @@ const App: React.FC = () => {
 
           {activeTab === AppTab.Study && (
              <div className="max-w-4xl mx-auto space-y-12 py-10 text-center">
-                <div className="space-y-6"><div className="w-24 h-24 bg-indigo-600 text-white rounded-[2rem] flex items-center justify-center mx-auto shadow-2xl shadow-indigo-200"><BookOpen className="w-12 h-12" /></div><div className="space-y-2"><h2 className="text-4xl md:text-5xl font-black tracking-tight">Bible Discovery</h2><p className="opacity-80 text-lg font-medium">পদের গভীর ব্যাখ্যা ও অর্থ দেখতে সার্চ করুন।</p></div></div>
+                <div className="space-y-6"><div className="w-24 h-24 bg-indigo-600 text-white rounded-[2rem] flex items-center justify-center mx-auto shadow-2xl shadow-indigo-200"><BookOpen className="w-12 h-12" /></div><div className="space-y-2"><h2 className="text-4xl md:text-5xl font-black tracking-tight">Bible Discovery</h2><p className="opacity-80 text-lg font-medium">পদের গভীর ব্যাখ্যা ও রিয়েল-টাইম তথ্য দেখতে সার্চ করুন।</p></div></div>
                 <div className="relative group max-w-2xl mx-auto">
                    <input 
                      type="text" 
@@ -568,24 +598,29 @@ const App: React.FC = () => {
                 {(verseExplanation || isExplaining) && (
                    <div className="space-y-8">
                       {isExplaining && !verseExplanation ? (
-                         <div className={`p-16 rounded-[3.5rem] border shadow-2xl ${cardBgClasses} animate-pulse flex flex-col items-center gap-6`}>
-                            <Loader2 className="w-12 h-12 animate-spin text-indigo-600" />
-                            <p className="font-black text-xs uppercase tracking-[0.3em] opacity-40">Gemini is searching scriptures...</p>
+                         <div className={`p-16 rounded-[3.5rem] border shadow-2xl ${cardBgClasses} flex flex-col items-center gap-6`}>
+                            <div className="relative">
+                               <Loader2 className="w-12 h-12 animate-spin text-indigo-600" />
+                               <Sparkles className="absolute -top-2 -right-2 w-5 h-5 text-amber-400 animate-pulse" />
+                            </div>
+                            <p className="font-black text-xs uppercase tracking-[0.3em] opacity-40 text-indigo-600/80">Gemini is searching scriptures via Google...</p>
                          </div>
                       ) : (
                         <>
                           {renderFormattedExplanation(verseExplanation || '')}
                           
-                          <div className={`flex flex-wrap items-center justify-center gap-4 p-8 rounded-[3rem] border ${cardBgClasses} shadow-xl animate-fadeIn`}>
-                             <button onClick={handleSaveStudy} disabled={isStudySaved} className={`flex items-center gap-3 px-8 py-5 rounded-2xl border transition-all ${isStudySaved ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-slate-50 border-slate-200 text-slate-600 hover:scale-105 active:scale-95'}`}>
-                                {isStudySaved ? <Check className="w-6 h-6" /> : <Bookmark className="w-6 h-6" />}
-                                <span className="text-xs font-black uppercase tracking-widest">{isStudySaved ? 'সেভ করা আছে' : 'সেভ করুন'}</span>
-                             </button>
-                             <button onClick={handleShareStudy} className={`flex items-center gap-3 px-8 py-5 rounded-2xl border transition-all ${isStudyShared ? 'bg-indigo-50 text-indigo-600 border-indigo-100' : 'bg-slate-50 border-slate-200 text-slate-600 hover:scale-105 active:scale-95'}`}>
-                                <Share2 className="w-6 h-6" />
-                                <span className="text-xs font-black uppercase tracking-widest">শেয়ার করুন</span>
-                             </button>
-                          </div>
+                          {verseExplanation && (
+                            <div className={`flex flex-wrap items-center justify-center gap-4 p-8 rounded-[3rem] border ${cardBgClasses} shadow-xl animate-fadeIn`}>
+                               <button onClick={handleSaveStudy} disabled={isStudySaved} className={`flex items-center gap-3 px-8 py-5 rounded-2xl border transition-all ${isStudySaved ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-slate-50 border-slate-200 text-slate-600 hover:scale-105 active:scale-95'}`}>
+                                  {isStudySaved ? <Check className="w-6 h-6" /> : <Bookmark className="w-6 h-6" />}
+                                  <span className="text-xs font-black uppercase tracking-widest">{isStudySaved ? 'সেভ করা আছে' : 'সেভ করুন'}</span>
+                               </button>
+                               <button onClick={handleShareStudy} className={`flex items-center gap-3 px-8 py-5 rounded-2xl border transition-all ${isStudyShared ? 'bg-indigo-50 text-indigo-600 border-indigo-100' : 'bg-slate-50 border-slate-200 text-slate-600 hover:scale-105 active:scale-95'}`}>
+                                  <Share2 className="w-6 h-6" />
+                                  <span className="text-xs font-black uppercase tracking-widest">শেয়ার করুন</span>
+                               </button>
+                            </div>
+                          )}
                         </>
                       )}
                    </div>
@@ -596,7 +631,7 @@ const App: React.FC = () => {
           {activeTab === AppTab.Reflections && (
             <div className="space-y-12">
                <div className="flex flex-col md:flex-row justify-between items-center gap-6"><div className="text-center md:text-left"><h2 className="text-4xl md:text-6xl font-black tracking-tighter mb-4 leading-none">Saved Studies</h2><p className="text-lg opacity-80 font-medium">আপনার সংরক্ষিত বাইবেল স্টাডি এবং পদের ব্যাখ্যা।</p></div>{savedStudies.length > 0 && (<button onClick={handleClearAllStudies} className="flex items-center gap-2 px-6 py-3 bg-rose-50 dark:bg-rose-900/10 text-rose-600 rounded-2xl font-black text-[10px] uppercase tracking-widest border border-rose-100 dark:border-rose-900/30 hover:bg-rose-100 transition-all"><Eraser className="w-4 h-4" /> CLEAR ALL</button>)}</div>
-               {savedStudies.length > 0 ? (<div className="grid grid-cols-1 md:grid-cols-2 gap-8">{savedStudies.map((study) => (<div key={study.id} onClick={() => setSelectedSavedStudy(study)} className={`p-8 rounded-[2.5rem] border shadow-md flex flex-col page-transition cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all ${cardBgClasses}`}><div className="flex items-center justify-between mb-6"><div className="flex items-center gap-3"><div className="w-10 h-10 bg-indigo-600/10 text-indigo-600 rounded-xl flex items-center justify-center"><History className="w-5 h-5" /></div><h3 className={`text-xl font-black tracking-tight ${textTitleClasses}`}>{study.reference}</h3></div><span className="text-[10px] font-bold opacity-30 uppercase tracking-widest flex items-center gap-2"><Calendar className="w-3 h-3" /> {new Date(study.timestamp).toLocaleDateString()}</span></div><div className={`flex-1 text-lg leading-relaxed mb-8 whitespace-pre-wrap line-clamp-6 opacity-80 ${theme === Theme.Dark ? 'text-slate-200' : ''}`}>{study.content}</div><div className="flex items-center gap-3 pt-6 border-t border-slate-100 dark:border-slate-700/50"><button onClick={(e) => { e.stopPropagation(); if(confirm("এই স্টাডি নোটটি মুছে ফেলতে চান?")) handleDeleteStudy(study.id); }} className="p-3 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-xl transition-all"><Trash2 className="w-5 h-5" /></button><button className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-indigo-600">READ FULL <Maximize2 className="w-4 h-4" /></button></div></div>))}</div>) : (<div className="py-20 text-center space-y-6 opacity-40"><div className="w-24 h-24 bg-slate-100 dark:bg-slate-800 rounded-[2rem] flex items-center justify-center mx-auto"><Bookmark className="w-10 h-10" /></div><div className="space-y-2"><p className="font-black text-xl">আপনার কোনো সেভ করা স্টাডি নেই।</p><p className="text-sm font-medium">Study সেকশনে গিয়ে নতুন কোনো পদ সার্চ করুন এবং সেভ করুন।</p></div><button onClick={() => setActiveTab(AppTab.Study)} className="bg-indigo-600 text-white px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-indigo-200">START DISCOVERY</button></div>)}
+               {savedStudies.length > 0 ? (<div className="grid grid-cols-1 md:grid-cols-2 gap-8">{savedStudies.map((study) => (<div key={study.id} onClick={() => setSelectedSavedStudy(study)} className={`p-8 rounded-[2.5rem] border shadow-md flex flex-col page-transition cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all ${cardBgClasses}`}><div className="flex items-center justify-between mb-6"><div className="flex items-center gap-3"><div className="w-10 h-10 bg-indigo-600/10 text-indigo-600 rounded-xl flex items-center justify-center"><History className="w-5 h-5" /></div><h3 className={`text-xl font-black tracking-tight ${textTitleClasses}`}>{study.reference}</h3></div><span className="text-[10px] font-bold opacity-30 uppercase tracking-widest flex items-center gap-2"><Calendar className="w-3 h-3" /> {new Date(study.timestamp).toLocaleDateString()}</span></div><div className={`flex-1 text-lg leading-relaxed mb-8 whitespace-pre-wrap line-clamp-4 opacity-80 ${theme === Theme.Dark ? 'text-slate-300' : 'text-slate-600'}`}>{stripMarkers(study.content)}</div><div className="flex items-center gap-3 pt-6 border-t border-slate-100 dark:border-slate-700/50"><button onClick={(e) => { e.stopPropagation(); if(confirm("এই স্টাডি নোটটি মুছে ফেলতে চান?")) handleDeleteStudy(study.id); }} className="p-3 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-xl transition-all"><Trash2 className="w-5 h-5" /></button><button className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-indigo-600">READ FULL <Maximize2 className="w-4 h-4" /></button></div></div>))}</div>) : (<div className="py-20 text-center space-y-6 opacity-40"><div className="w-24 h-24 bg-slate-100 dark:bg-slate-800 rounded-[2rem] flex items-center justify-center mx-auto"><Bookmark className="w-10 h-10" /></div><div className="space-y-2"><p className="font-black text-xl">আপনার কোনো সেভ করা স্টাডি নেই।</p><p className="text-sm font-medium">Study সেকশনে গিয়ে নতুন কোনো পদ সার্চ করুন এবং সেভ করুন।</p></div><button onClick={() => setActiveTab(AppTab.Study)} className="bg-indigo-600 text-white px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-indigo-200">START DISCOVERY</button></div>)}
             </div>
           )}
 
@@ -616,7 +651,7 @@ const App: React.FC = () => {
                                  <button 
                                    key={font.name} 
                                    onClick={() => setActiveFont(font.class)}
-                                   className={`p-4 rounded-2xl border transition-all text-sm font-bold flex flex-start items-start gap-1 group ${activeFont === font.class ? 'bg-indigo-600 border-indigo-600 text-white shadow-xl scale-105 z-10' : cardBgClasses + ' hover:border-indigo-300'}`}
+                                   className={`p-4 rounded-2xl border transition-all text-sm font-bold flex flex-col items-start gap-1 group ${activeFont === font.class ? 'bg-indigo-600 border-indigo-600 text-white shadow-xl scale-105 z-10' : cardBgClasses + ' hover:border-indigo-300'}`}
                                  >
                                    <span className="text-[10px] opacity-60 uppercase tracking-widest font-black">Font</span>
                                    <span className={`${font.class} text-base`}>{font.name}</span>
@@ -632,7 +667,7 @@ const App: React.FC = () => {
                       </div>
                    </div>
                 ) : (
-                  <div className="max-w-md mx-auto space-y-12 py-10 text-center">
+                  <div className="max-md mx-auto space-y-12 py-10 text-center">
                     <div className={`w-28 h-28 mx-auto rounded-[2.5rem] flex items-center justify-center text-white bg-indigo-600 shadow-2xl shadow-indigo-100`}><LogIn className="w-12 h-12" /></div>
                     <div className="space-y-4">
                       <button onClick={() => setShowLoginModal(true)} className={`w-full py-5 px-8 rounded-3xl border font-black text-sm flex items-center justify-center gap-4 transition-all hover:shadow-xl active:scale-95 ${theme === Theme.Dark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-slate-200'}`}><Chrome className="w-6 h-6 text-rose-500" /> CONTINUE WITH GMAIL</button>

@@ -34,48 +34,69 @@ export const generateReflection = async (songTitle: string, lyrics: string[]) =>
 };
 
 /**
- * Explains a Bible verse using Gemini 3 Flash for high speed.
+ * Explains a Bible verse using Gemini 3 Pro with mandatory Google Search.
+ * Pro model is selected for better tool usage and scholarly accuracy.
  */
-export const explainVerseStream = async (verseReference: string, onChunk: (text: string) => void) => {
+export const explainVerseStream = async (verseReference: string, onChunk: (text: string, sources?: any[]) => void) => {
   try {
-    const modelName = 'gemini-3-flash-preview'; 
-    const prompt = `Explain "${verseReference}" in Bengali profoundly.
-    Follow this structure strictly:
+    const aiInstance = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const modelName = 'gemini-3-pro-preview'; 
     
+    const prompt = `SEARCH GOOGLE for the Bible verse: "${verseReference}".
+    Verify the exact Bengali text and historical context.
+    
+    Provide a profound explanation in Bengali with these exact sections:
     [[VERSE]]
-    (Full text of the verse)
+    (The full Bengali verse text)
     
     [[CONTEXT]]
-    (Historical context)
+    (The historical and biblical setting discovered via search)
     
     [[MEANING]]
-    (Deep spiritual meaning)
+    (Theological depth and spiritual insight)
     
     [[APPLICATION]]
-    (Practical application)
+    (Practical application for daily life)
     
     [[PRAYER]]
-    (A short prayer)
+    (A short personal prayer related to this truth)
 
-    Do not include any conversational preamble. Just the markers and content. Start immediately with [[VERSE]].`;
+    If you cannot find the specific verse, provide the most relevant biblical theme. 
+    Start directly with [[VERSE]]. Use only Bengali.`;
     
-    const response = await ai.models.generateContentStream({
+    const response = await aiInstance.models.generateContentStream({
       model: modelName,
       contents: prompt,
       config: {
-        systemInstruction: "You are an elite Bible Scholar. Output depth-filled Bengali explanations. Use exactly the provided markers in double brackets like [[VERSE]]. Be fast and direct.",
-        thinkingConfig: { thinkingBudget: 1024 }, // Minimal thinking for faster startup on Flash
-        temperature: 0.1, 
+        systemInstruction: "You are a world-class Bible Scholar and Theologian. You MUST use the googleSearch tool for every request to ensure the accuracy of the scripture and its context. Your tone is respectful, scholarly, and spiritually encouraging. Output ONLY in Bengali.",
+        tools: [{ googleSearch: {} }],
+        temperature: 0.1, // High precision
       }
     });
 
     let fullText = '';
+    let allSources: any[] = [];
+
     for await (const chunk of response) {
       if (chunk.text) {
         fullText += chunk.text;
-        onChunk(fullText);
+        
+        // Accumulate unique grounding sources
+        const sources = chunk.candidates?.[0]?.groundingMetadata?.groundingChunks;
+        if (sources) {
+          sources.forEach(s => {
+            if (s.web && !allSources.some(existing => existing.web?.uri === s.web.uri)) {
+              allSources.push(s);
+            }
+          });
+        }
+        
+        onChunk(fullText, allSources.length > 0 ? allSources : undefined);
       }
     }
+    
+    if (!fullText) throw new Error("No response generated");
+    
     return fullText;
   } catch (error) {
     console.error("Explanation Stream Error:", error);
