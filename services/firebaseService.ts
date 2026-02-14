@@ -5,13 +5,13 @@ import { Message } from "../types";
 
 // Firebase project configuration
 const firebaseConfig = {
-  apiKey: "YOUR_FIREBASE_API_KEY",
-  authDomain: "your-app.firebaseapp.com",
-  databaseURL: "https://your-app-default-rtdb.firebaseio.com",
-  projectId: "your-app",
-  storageBucket: "your-app.appspot.com",
-  messagingSenderId: "123456789",
-  appId: "1:123456789:web:abcdef123456"
+ apiKey: "AIzaSyCe5s56r7d4txfeXXMNq6notCs-XDk0JEA",
+  authDomain: "theobiblestudy-bac71.firebaseapp.com",
+  databaseURL: "https://theobiblestudy-bac71-default-rtdb.firebaseio.com",
+  projectId: "theobiblestudy-bac71",
+  storageBucket: "theobiblestudy-bac71.firebasestorage.app",
+  messagingSenderId: "94907339663",
+  appId: "1:94907339663:web:3875ae4d395e757014b1fa"
 };
 
 let app: FirebaseApp | null = null;
