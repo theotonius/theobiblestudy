@@ -228,17 +228,27 @@ const App: React.FC = () => {
     setGroundingSources([]);
     setIsStudySaved(false);
     setIsStudyShared(false);
+    
     try {
       await explainVerseStream(studyQuery, (chunk, sources) => {
         setVerseExplanation(chunk);
         if (sources && sources.length > 0) {
           setGroundingSources(sources);
         }
-        // Initially set isExplaining to false once we get the first chunk
-        setIsExplaining(false);
+        // Initially set isExplaining to false once we get some content
+        if (chunk.length > 5) {
+          setIsExplaining(false);
+        }
       });
-    } catch (error) {
-      setVerseExplanation("দুঃখিত, ব্যাখ্যা লোড করা সম্ভব হয়নি। অনুগ্রহ করে ইন্টারনেট কানেকশন চেক করুন।");
+    } catch (error: any) {
+      console.error("Search Error:", error);
+      const errorMsg = error.message?.includes("API key") 
+        ? "API Key সমস্যা। অনুগ্রহ করে ডেভেলপার প্রোফাইলে চেক করুন।"
+        : "দুঃখিত, কোনো তথ্য পাওয়া যায়নি। অনুগ্রহ করে অন্য পদ সার্চ করুন।";
+      setVerseExplanation(errorMsg);
+      setIsExplaining(false);
+      showToast(errorMsg, "error");
+    } finally {
       setIsExplaining(false);
     }
   };
@@ -403,19 +413,19 @@ const App: React.FC = () => {
           );
         })}
 
-        {/* Display Grounding Sources */}
+        {/* Display Grounding Sources with enhanced visibility */}
         {groundingSources.length > 0 && (
-          <div className={`p-8 rounded-[2.5rem] border shadow-sm ${cardBgClasses} space-y-4`}>
-             <div className="flex items-center gap-3 opacity-50">
-                <Globe className="w-5 h-5" />
-                <h4 className="text-xs font-black uppercase tracking-widest">তথ্যসূত্র ও সোর্স</h4>
+          <div className={`p-8 rounded-[2.5rem] border shadow-sm ${cardBgClasses} space-y-4 border-indigo-200 dark:border-indigo-900/40 bg-indigo-50/10`}>
+             <div className="flex items-center gap-3 opacity-60">
+                <Globe className="w-5 h-5 text-indigo-500" />
+                <h4 className="text-xs font-black uppercase tracking-widest text-indigo-600">উৎস এবং তথ্যসূত্র (Grounding)</h4>
              </div>
              <div className="flex flex-wrap gap-2">
                 {groundingSources.map((src, i) => (
                   src.web && (
-                    <a key={i} href={src.web.uri} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-4 py-2 bg-indigo-600/10 text-indigo-600 rounded-xl text-[10px] font-black hover:bg-indigo-600 hover:text-white transition-all">
+                    <a key={i} href={src.web.uri} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-5 py-3 bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 rounded-2xl text-[10px] font-black shadow-sm hover:shadow-md hover:bg-indigo-600 hover:text-white transition-all border border-indigo-100 dark:border-indigo-900/30">
                        <ExternalLink className="w-3 h-3" />
-                       {src.web.title || 'Source'}
+                       {src.web.title || 'Source Link'}
                     </a>
                   )
                 ))}
@@ -565,7 +575,7 @@ const App: React.FC = () => {
 
           {activeTab === AppTab.Study && (
              <div className="max-w-4xl mx-auto space-y-12 py-10 text-center">
-                <div className="space-y-6"><div className="w-24 h-24 bg-indigo-600 text-white rounded-[2rem] flex items-center justify-center mx-auto shadow-2xl shadow-indigo-200"><BookOpen className="w-12 h-12" /></div><div className="space-y-2"><h2 className="text-4xl md:text-5xl font-black tracking-tight">Bible Discovery</h2><p className="opacity-80 text-lg font-medium">পদের গভীর ব্যাখ্যা ও অর্থ দেখতে সার্চ করুন।</p></div></div>
+                <div className="space-y-6"><div className="w-24 h-24 bg-indigo-600 text-white rounded-[2rem] flex items-center justify-center mx-auto shadow-2xl shadow-indigo-200"><BookOpen className="w-12 h-12" /></div><div className="space-y-2"><h2 className="text-4xl md:text-5xl font-black tracking-tight">Bible Discovery</h2><p className="opacity-80 text-lg font-medium">পদের গভীর ব্যাখ্যা ও রিয়েল-টাইম তথ্য দেখতে সার্চ করুন।</p></div></div>
                 <div className="relative group max-w-2xl mx-auto">
                    <input 
                      type="text" 
@@ -589,7 +599,11 @@ const App: React.FC = () => {
                       {isExplaining && !verseExplanation ? (
                          <div className={`p-16 rounded-[3.5rem] border shadow-2xl ${cardBgClasses} animate-pulse flex flex-col items-center gap-6`}>
                             <Loader2 className="w-12 h-12 animate-spin text-indigo-600" />
-                            <p className="font-black text-xs uppercase tracking-[0.3em] opacity-40 text-indigo-600/60">ব্যাখ্যা তৈরি হচ্ছে অনুগ্রহ করে অপেক্ষা করুন</p>
+                            <p className="font-black text-xs uppercase tracking-[0.3em] opacity-40 text-indigo-600/60 animate-bounce">ব্যাখ্যা তৈরি হচ্ছে অনুগ্রহ করে অপেক্ষা করুন</p>
+                            <div className="flex items-center gap-2 text-[10px] font-black uppercase text-slate-400">
+                               <CloudLightning className="w-3 h-3" />
+                               Searching via Google Grounding...
+                            </div>
                          </div>
                       ) : (
                         <>
@@ -651,7 +665,7 @@ const App: React.FC = () => {
                       </div>
                    </div>
                 ) : (
-                  <div className="max-w-md mx-auto space-y-12 py-10 text-center">
+                  <div className="max-md mx-auto space-y-12 py-10 text-center">
                     <div className={`w-28 h-28 mx-auto rounded-[2.5rem] flex items-center justify-center text-white bg-indigo-600 shadow-2xl shadow-indigo-100`}><LogIn className="w-12 h-12" /></div>
                     <div className="space-y-4">
                       <button onClick={() => setShowLoginModal(true)} className={`w-full py-5 px-8 rounded-3xl border font-black text-sm flex items-center justify-center gap-4 transition-all hover:shadow-xl active:scale-95 ${theme === Theme.Dark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-slate-200'}`}><Chrome className="w-6 h-6 text-rose-500" /> CONTINUE WITH GMAIL</button>

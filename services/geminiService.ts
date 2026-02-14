@@ -34,48 +34,66 @@ export const generateReflection = async (songTitle: string, lyrics: string[]) =>
 };
 
 /**
- * Explains a Bible verse using Gemini 3 Flash with Google Search capability.
+ * Explains a Bible verse using Gemini 3 Flash with mandatory Google Search.
+ * Ensures the model looks for real-time information to provide accurate context.
  */
 export const explainVerseStream = async (verseReference: string, onChunk: (text: string, groundingSources?: any[]) => void) => {
   try {
+    // Creating a fresh instance to ensure the latest API configuration
+    const aiInstance = new GoogleGenAI({ apiKey: process.env.API_KEY });
     const modelName = 'gemini-3-flash-preview'; 
-    const prompt = `Explain "${verseReference}" in Bengali profoundly. Use Google Search to find accurate historical context and theological insights.
-    Follow this structure strictly:
+    
+    // Explicit prompt to trigger web search for accurate theological and historical info
+    const prompt = `Please use Google Search to find accurate information about the Bible verse or topic: "${verseReference}". 
+    Then, provide a profound explanation in Bengali.
+    
+    Structure your response strictly as:
     
     [[VERSE]]
-    (Full text of the verse)
+    (The full verse text in Bengali and English if available)
     
     [[CONTEXT]]
-    (Historical context)
+    (Search-backed historical and biblical context)
     
     [[MEANING]]
-    (Deep spiritual meaning)
+    (Deep spiritual meaning and theological insights)
     
     [[APPLICATION]]
-    (Practical application)
+    (Practical life application)
     
     [[PRAYER]]
-    (A short prayer)
+    (A relevant short prayer)
 
-    Do not include any intro. Start directly with [[VERSE]].`;
+    Note: Always include relevant website URLs from your search as grounding sources. Start directly with [[VERSE]].`;
     
-    const response = await ai.models.generateContentStream({
+    const response = await aiInstance.models.generateContentStream({
       model: modelName,
       contents: prompt,
       config: {
-        systemInstruction: "You are an elite Bible Scholar. Output deep Bengali explanations. Use double brackets for markers like [[VERSE]]. Use Google Search tool to ensure accuracy of quotes and history.",
+        systemInstruction: "You are an elite Bible Scholar. Use the googleSearch tool for every query to verify facts, cross-reference scriptures, and provide up-to-date context. Output only in Bengali. Always cite your sources.",
         tools: [{ googleSearch: {} }],
-        temperature: 0.1, 
+        temperature: 0.2,
       }
     });
 
     let fullText = '';
+    let allSources: any[] = [];
+
     for await (const chunk of response) {
       if (chunk.text) {
         fullText += chunk.text;
-        // Extract grounding chunks if available in this chunk
+        
+        // Accumulate unique grounding sources
         const sources = chunk.candidates?.[0]?.groundingMetadata?.groundingChunks;
-        onChunk(fullText, sources);
+        if (sources) {
+          sources.forEach(s => {
+            if (s.web && !allSources.some(existing => existing.web?.uri === s.web.uri)) {
+              allSources.push(s);
+            }
+          });
+        }
+        
+        onChunk(fullText, allSources.length > 0 ? allSources : undefined);
       }
     }
     return fullText;
