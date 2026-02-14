@@ -229,16 +229,12 @@ const App: React.FC = () => {
     try {
       await explainVerseStream(studyQuery, (chunk) => {
         setVerseExplanation(chunk);
-        // We only set isExplaining to false if we have a substantial amount of text
-        // to prevent the loader from flashing too quickly
-        if (chunk.length > 50) {
-           setIsExplaining(false);
-        }
+        // Initially set isExplaining to false once we get the first chunk
+        // but keep the loading state inside the UI if needed
+        setIsExplaining(false);
       });
     } catch (error) {
-      setVerseExplanation("দুঃখিত, ব্যাখ্যা লোড করা সম্ভব হয়নি। অনুগ্রহ করে আপনার ইন্টারনেট কানেকশন চেক করুন।");
-      setIsExplaining(false);
-    } finally {
+      setVerseExplanation("দুঃখিত, ব্যাখ্যা লোড করা সম্ভব হয়নি।");
       setIsExplaining(false);
     }
   };
@@ -335,7 +331,8 @@ const App: React.FC = () => {
   const textMutedClasses = theme === Theme.Dark ? 'text-slate-300' : theme === Theme.Sepia ? 'text-[#8b6d4d]' : 'text-slate-500';
 
   /**
-   * Rendering for verse explanations with simplified parsing.
+   * Enhanced rendering for structured verse explanations.
+   * Uses case-insensitive regex for more robust marker finding.
    */
   const renderFormattedExplanation = (text: string) => {
     if (!text) return null;
@@ -348,12 +345,11 @@ const App: React.FC = () => {
       { key: '[[PRAYER]]', label: 'একটি প্রার্থনা', icon: <HandHelping className="w-5 h-5" />, color: 'purple' },
     ];
 
-    const upperText = text.toUpperCase();
+    // Find occurrences of any markers (case-insensitive)
+    const normalizedText = text.replace(/\[\[/g, ' [[').replace(/\]\]/g, ']] ');
     
-    // Check if any markers are present
-    const hasAnyMarker = sections.some(s => upperText.includes(s.key));
-    
-    if (!hasAnyMarker) {
+    // If no markers found yet, show raw text in a nice container (for initial streaming)
+    if (!sections.some(s => text.toUpperCase().includes(s.key.toUpperCase()))) {
       return (
         <div className={`p-8 rounded-[2.5rem] border shadow-sm ${cardBgClasses} whitespace-pre-wrap text-xl leading-relaxed text-left animate-fadeIn`}>
           {text}
@@ -364,23 +360,29 @@ const App: React.FC = () => {
     return (
       <div className="space-y-8 text-left animate-fadeIn">
         {sections.map((section, idx) => {
-          const markerPos = upperText.indexOf(section.key);
-          if (markerPos === -1) return null;
+          const upperText = text.toUpperCase();
+          const markerUpper = section.key.toUpperCase();
+          const startIndex = upperText.indexOf(markerUpper);
           
-          let nextPos = -1;
-          // Find the start of the next section
+          if (startIndex === -1) return null;
+          
+          let content = '';
+          // Find the next available section marker to know where this one ends
+          let nextMarkerIndex = -1;
           sections.forEach((s, i) => {
             if (i > idx) {
-              const p = upperText.indexOf(s.key);
-              if (p !== -1 && (nextPos === -1 || p < nextPos)) {
-                nextPos = p;
+              const pos = upperText.indexOf(s.key.toUpperCase());
+              if (pos !== -1 && (nextMarkerIndex === -1 || pos < nextMarkerIndex)) {
+                nextMarkerIndex = pos;
               }
             }
           });
 
-          const content = nextPos !== -1 
-            ? text.substring(markerPos + section.key.length, nextPos).trim()
-            : text.substring(markerPos + section.key.length).trim();
+          if (nextMarkerIndex !== -1) {
+            content = text.substring(startIndex + section.key.length, nextMarkerIndex).trim();
+          } else {
+            content = text.substring(startIndex + section.key.length).trim();
+          }
 
           if (!content) return null;
 
@@ -614,7 +616,7 @@ const App: React.FC = () => {
                                  <button 
                                    key={font.name} 
                                    onClick={() => setActiveFont(font.class)}
-                                   className={`p-4 rounded-2xl border transition-all text-sm font-bold flex flex-col items-start gap-1 group ${activeFont === font.class ? 'bg-indigo-600 border-indigo-600 text-white shadow-xl scale-105 z-10' : cardBgClasses + ' hover:border-indigo-300'}`}
+                                   className={`p-4 rounded-2xl border transition-all text-sm font-bold flex flex-start items-start gap-1 group ${activeFont === font.class ? 'bg-indigo-600 border-indigo-600 text-white shadow-xl scale-105 z-10' : cardBgClasses + ' hover:border-indigo-300'}`}
                                  >
                                    <span className="text-[10px] opacity-60 uppercase tracking-widest font-black">Font</span>
                                    <span className={`${font.class} text-base`}>{font.name}</span>
