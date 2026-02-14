@@ -34,43 +34,44 @@ export const generateReflection = async (songTitle: string, lyrics: string[]) =>
 };
 
 /**
- * Explains a Bible verse using Gemini 3 Pro with Mandatory Google Search.
- * Pro models are much more reliable for grounding and tool usage.
+ * Explains a Bible verse using Gemini 3 Flash with Google Search.
+ * Optimized for live performance and extreme accuracy.
  */
 export const explainVerseStream = async (verseReference: string, onChunk: (text: string, sources?: any[]) => void) => {
   try {
     const aiInstance = new GoogleGenAI({ apiKey: process.env.API_KEY });
-    // Pro model is significantly better at following strict formatting instructions and tool usage
-    const modelName = 'gemini-3-pro-preview'; 
+    // Using gemini-3-flash-preview for high speed and reliability with Google Search tools
+    const modelName = 'gemini-3-flash-preview'; 
     
-    const prompt = `SEARCH GOOGLE for the exact Bible verse: "${verseReference}". 
+    const prompt = `SEARCH GOOGLE for the Bible verse: "${verseReference}".
+    Verify the text in English and standard Bengali translations.
     
-    Then, explain it profoundly in Bengali using this exact structure:
-    
+    EXPLAIN profoundly in Bengali using this exact format:
     [[VERSE]]
-    (The full Bengali verse text from a standard translation)
+    (The full Bengali verse text accurately)
     
     [[CONTEXT]]
-    (The historical and biblical background discovered via search)
+    (Historical background and why it was written)
     
     [[MEANING]]
-    (Theological depth and spiritual insight)
+    (Spiritual significance and deep meaning)
     
     [[APPLICATION]]
-    (How this applies to modern daily life)
+    (Practical daily life application)
     
     [[PRAYER]]
-    (A short personal prayer related to this verse)
+    (A short personal prayer)
 
-    MANDATORY: Use ONLY Bengali for all sections. Be precise and scholarly.`;
+    MANDATORY: Use ONLY Bengali for the response text. 
+    If you find multiple interpretations, provide the most widely accepted scholarly one.`;
     
     const response = await aiInstance.models.generateContentStream({
       model: modelName,
       contents: prompt,
       config: {
-        systemInstruction: "You are a world-class Bible Scholar and Theologian. You MUST use the googleSearch tool to find and verify the scripture text and its context. Your tone is respectful and spiritually encouraging. ALWAYS output in Bengali.",
+        systemInstruction: "You are an elite Bible Scholar. You MUST use the googleSearch tool for every request. Search in both English and Bengali to ensure absolute accuracy of the text. Do not censor or block Bible study content. Output directly in the requested format in Bengali.",
         tools: [{ googleSearch: {} }],
-        temperature: 0.1, // High deterministic accuracy
+        temperature: 0, // Deterministic for facts
       }
     });
 
@@ -81,7 +82,7 @@ export const explainVerseStream = async (verseReference: string, onChunk: (text:
       if (chunk.text) {
         fullText += chunk.text;
         
-        // Accumulate unique grounding sources
+        // Grounding metadata check
         const sources = chunk.candidates?.[0]?.groundingMetadata?.groundingChunks;
         if (sources) {
           sources.forEach(s => {
@@ -95,7 +96,7 @@ export const explainVerseStream = async (verseReference: string, onChunk: (text:
       }
     }
     
-    if (!fullText) throw new Error("Empty response from model");
+    if (!fullText) throw new Error("Connection interrupted or empty data");
     
     return fullText;
   } catch (error) {

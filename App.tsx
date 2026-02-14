@@ -227,7 +227,9 @@ const App: React.FC = () => {
   };
 
   const handleStudySearch = async () => {
-    if (!studyQuery.trim()) return;
+    const query = studyQuery.trim();
+    if (!query) return;
+
     setIsExplaining(true);
     setVerseExplanation(""); 
     setGroundingSources([]);
@@ -236,20 +238,26 @@ const App: React.FC = () => {
     
     try {
       let contentReceived = false;
-      await explainVerseStream(studyQuery, (chunk, sources) => {
+      await explainVerseStream(query, (chunk, sources) => {
         if (!contentReceived && chunk.length > 5) {
           contentReceived = true;
-          setIsExplaining(false); // Switch from full loader to streaming UI
+          setIsExplaining(false); // Switch to stream UI early
         }
         setVerseExplanation(chunk);
         if (sources) {
           setGroundingSources(sources);
         }
       });
+      
+      // If we finished without any content
+      if (!contentReceived && !verseExplanation) {
+        setVerseExplanation("দুঃখিত, কোনো তথ্য পাওয়া যায়নি। অনুগ্রহ করে পদের নাম পরিষ্কারভাবে লিখুন।");
+      }
+
     } catch (error: any) {
       console.error("Search Error:", error);
       setIsExplaining(false);
-      setVerseExplanation("দুঃখিত, তথ্য খুঁজে পাওয়া যায়নি। অনুগ্রহ করে পদের নাম সঠিকভাবে লিখুন।");
+      setVerseExplanation("দুঃখিত, সার্ভার সংযোগ বিচ্ছিন্ন হয়েছে। অনুগ্রহ করে ইন্টারনেট চেক করে পুনরায় চেষ্টা করুন।");
       showToast("অনুসন্ধান ব্যর্থ হয়েছে।", "error");
     } finally {
       setIsExplaining(false);
@@ -601,7 +609,7 @@ const App: React.FC = () => {
                                <Loader2 className="w-12 h-12 animate-spin text-indigo-600" />
                                <Sparkles className="absolute -top-2 -right-2 w-5 h-5 text-amber-400 animate-pulse" />
                             </div>
-                            <p className="font-black text-xs uppercase tracking-[0.3em] opacity-40 text-indigo-600/80">Searching Scriptures via Google...</p>
+                            <p className="font-black text-xs uppercase tracking-[0.3em] opacity-40 text-indigo-600/80">Searching Internet via Google...</p>
                          </div>
                       ) : (
                         <>
