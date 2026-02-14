@@ -9,7 +9,7 @@ import {
   ShieldCheck, Facebook, Share2, Check, Bookmark, Trash2, 
   ChevronLeft, ChevronRight, CloudOff, X, Moon, Sun, Coffee, 
   Code2, Github, Globe, Linkedin, Mail, Smartphone, Award, Laptop, Wand2, AlertCircle,
-  LogIn, Chrome, Settings, UserCircle, Cpu, Layers, Zap, PhoneCall, Camera
+  LogIn, Chrome, Settings, UserCircle, Cpu, Layers, Zap, PhoneCall
 } from 'lucide-react';
 import { fetchSongFromAI, explainVerseStream } from './services/geminiService';
 
@@ -24,65 +24,7 @@ const NavButton: React.FC<{ active: boolean; onClick: () => void; icon: React.Re
   </button>
 );
 
-const SplashScreen: React.FC<{ onFinish: () => void }> = ({ onFinish }) => {
-  useEffect(() => {
-    const timer = setTimeout(onFinish, 3000);
-    return () => clearTimeout(timer);
-  }, [onFinish]);
-
-  return (
-    <div className="fixed inset-0 z-[200] bg-slate-900 flex flex-col items-center justify-center overflow-hidden">
-      {/* Background Glows */}
-      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-indigo-600/20 blur-[120px] animate-pulse rounded-full" />
-      <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-600/20 blur-[120px] animate-pulse rounded-full" style={{ animationDelay: '1.5s' }} />
-      
-      {/* Floating Particles Simulation */}
-      <div className="absolute inset-0 opacity-20">
-         {[...Array(20)].map((_, i) => (
-           <div 
-             key={i}
-             className="absolute w-1 h-1 bg-white rounded-full animate-celestial"
-             style={{
-               top: `${Math.random() * 100}%`,
-               left: `${Math.random() * 100}%`,
-               animationDelay: `${Math.random() * 5}s`,
-               animationDuration: `${10 + Math.random() * 10}s`
-             }}
-           />
-         ))}
-      </div>
-
-      <div className="relative z-10 flex flex-col items-center gap-8">
-        <div className="relative group">
-           <div className="absolute inset-0 bg-indigo-500/30 blur-3xl rounded-full scale-150 group-hover:scale-175 transition-transform duration-1000" />
-           <div className="w-32 h-32 md:w-40 md:h-40 bg-white rounded-[3rem] shadow-2xl flex items-center justify-center relative animate-scaleUp">
-              <Music className="w-16 h-16 md:w-20 md:h-20 text-indigo-600" />
-              <div className="absolute -top-2 -right-2 bg-amber-400 p-2 rounded-2xl shadow-lg animate-bounce">
-                <Sparkles className="w-6 h-6 text-white" />
-              </div>
-           </div>
-        </div>
-
-        <div className="text-center space-y-3 animate-slideUp" style={{ animationDelay: '0.4s' }}>
-           <h1 className="text-4xl md:text-6xl font-black text-white tracking-tighter">Sacred Melodies</h1>
-           <p className="text-indigo-300 font-bold uppercase tracking-[0.4em] text-[10px] md:text-xs">
-             সঙ্গীতের মাধ্যমে ঈশ্বরের আরাধনা
-           </p>
-        </div>
-
-        <div className="mt-12 flex flex-col items-center gap-4 animate-fadeIn" style={{ animationDelay: '1.2s' }}>
-          <div className="w-48 h-1 bg-slate-800 rounded-full overflow-hidden">
-             <div className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 animate-loading-bar" />
-          </div>
-          <p className="text-slate-500 text-[9px] font-black uppercase tracking-widest">Loading Grace...</p>
-        </div>
-      </div>
-    </div>
-  );
-};
-
 const App: React.FC = () => {
-  const [showSplash, setShowSplash] = useState(true);
   const [activeTab, setActiveTab] = useState<AppTab>(AppTab.Library);
   const [selectedSong, setSelectedSong] = useState<Song | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -127,9 +69,6 @@ const App: React.FC = () => {
   const [isStudySaved, setIsStudySaved] = useState(false);
   const [isStudyShared, setIsStudyShared] = useState(false);
   const [isLoggingIn, setIsLoggingIn] = useState<'google' | 'facebook' | null>(null);
-  const [showLoginModal, setShowLoginModal] = useState(false);
-  const [loginForm, setLoginForm] = useState({ name: '', email: '' });
-  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
   useEffect(() => {
     localStorage.setItem('sm_favorites', JSON.stringify(favorites));
@@ -138,11 +77,6 @@ const App: React.FC = () => {
     localStorage.setItem('sm_user', JSON.stringify(user));
     document.documentElement.className = theme;
   }, [favorites, savedStudies, theme, user]);
-
-  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
-    setToast({ message, type });
-    setTimeout(() => setToast(null), 3000);
-  };
 
   const allSongs = useMemo(() => BIBLE_SONGS, []);
 
@@ -162,19 +96,11 @@ const App: React.FC = () => {
   }, [searchQuery, allSongs, activeCategory]);
 
   const toggleFavorite = (id: string) => {
-    if (!user) {
-      showToast("দয়া করে গান সেভ করতে গুগল দিয়ে লগইন করুন।", "error");
-      setActiveTab(AppTab.Profile);
-      return;
-    }
-    const isFav = favorites.includes(id);
-    setFavorites(prev => isFav ? prev.filter(fid => fid !== id) : [...prev, id]);
-    showToast(isFav ? "লাইব্রেরি থেকে সরানো হয়েছে।" : "লাইব্রেরিতে যুক্ত করা হয়েছে।");
+    setFavorites(prev => prev.includes(id) ? prev.filter(fid => fid !== id) : [...prev, id]);
   };
 
   const deleteSavedStudy = (id: string) => {
     setSavedStudies(prev => prev.filter(s => s.id !== id));
-    showToast("স্টাডি নোটটি মুছে ফেলা হয়েছে।");
   };
 
   const handleAISearch = async () => {
@@ -205,12 +131,13 @@ const App: React.FC = () => {
   const handleStudySearch = async () => {
     if (!studyQuery.trim()) return;
     setIsExplaining(true);
-    setVerseExplanation(""); 
+    setVerseExplanation(""); // Clear previous results immediately
     setIsStudySaved(false);
     
     try {
       await explainVerseStream(studyQuery, (chunk) => {
         setVerseExplanation(chunk);
+        // Hide loader as soon as we get the first piece of text
         if (isExplaining) setIsExplaining(false);
       });
     } catch (error) {
@@ -222,11 +149,6 @@ const App: React.FC = () => {
   };
 
   const handleSaveStudy = () => {
-    if (!user) {
-      showToast("স্টাডি নোট সেভ করতে গুগল দিয়ে লগইন করুন।", "error");
-      setActiveTab(AppTab.Profile);
-      return;
-    }
     if (!verseExplanation || !studyQuery) return;
     const newStudy: SavedStudy = {
       id: `study-${Date.now()}`,
@@ -236,7 +158,6 @@ const App: React.FC = () => {
     };
     setSavedStudies(prev => [newStudy, ...prev]);
     setIsStudySaved(true);
-    showToast("স্টাডি নোটটি সেভ করা হয়েছে।");
   };
 
   const handleShareStudy = async () => {
@@ -248,52 +169,27 @@ const App: React.FC = () => {
       } else {
         await navigator.clipboard.writeText(shareText);
         setIsStudyShared(true);
-        showToast("ক্লিপবোর্ডে কপি করা হয়েছে।");
         setTimeout(() => setIsStudyShared(false), 2000);
       }
     } catch (err) { console.error("Error sharing study:", err); }
   };
 
-  const handleGoogleLoginSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!loginForm.name || !loginForm.email) return;
-    
-    setIsLoggingIn('google');
-    setShowLoginModal(false);
-    
+  const handleSocialLogin = (provider: 'google' | 'facebook') => {
+    setIsLoggingIn(provider);
     setTimeout(() => {
-      const newUser: UserProfile = {
-        name: loginForm.name,
-        email: loginForm.email,
-        photo: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(loginForm.name)}`
-      };
-      setUser(newUser);
+      const mockUser: UserProfile = provider === 'google' 
+        ? { name: 'Guest User (Google)', email: 'guest.google@gmail.com', photo: 'https://api.dicebear.com/7.x/avataaars/svg?seed=google' }
+        : { name: 'Guest User (Facebook)', email: 'guest.fb@facebook.com', photo: 'https://api.dicebear.com/7.x/avataaars/svg?seed=facebook' };
+      
+      setUser(mockUser);
       setIsLoggingIn(null);
-      showToast(`স্বাগতম, ${loginForm.name}! গুগল লগইন সফল হয়েছে।`);
-      setActiveTab(AppTab.Library);
-    }, 2000);
-  };
-
-  const handleSocialLogin = (platform: 'google' | 'facebook') => {
-    setIsLoggingIn(platform);
-    setTimeout(() => {
-      const newUser: UserProfile = {
-        name: platform === 'facebook' ? 'Facebook User' : 'Google User',
-        email: `${platform}.user@example.com`,
-        photo: `https://api.dicebear.com/7.x/avataaars/svg?seed=${platform}-${Date.now()}`
-      };
-      setUser(newUser);
-      setIsLoggingIn(null);
-      showToast(`স্বাগতম! ${platform === 'facebook' ? 'ফেসবুক' : 'গুগল'} লগইন সফল হয়েছে।`);
-      setActiveTab(AppTab.Library);
     }, 1500);
   };
 
   const handleLogout = () => {
-    if (confirm("আপনি কি নিশ্চিত যে আপনি সাইন আউট করতে চান?")) {
+    if (confirm("Are you sure you want to sign out?")) {
       setUser(null);
       setActiveTab(AppTab.Library);
-      showToast("আপনি সাইন আউট করেছেন।");
     }
   };
 
@@ -309,10 +205,6 @@ const App: React.FC = () => {
   const textTitleClasses = theme === Theme.Dark ? 'text-white' : theme === Theme.Sepia ? 'text-[#433422]' : 'text-slate-900';
   const textMutedClasses = theme === Theme.Dark ? 'text-slate-300' : theme === Theme.Sepia ? 'text-[#8b6d4d]' : 'text-slate-500';
 
-  if (showSplash) {
-    return <SplashScreen onFinish={() => setShowSplash(false)} />;
-  }
-
   if (selectedSong && activeTab === AppTab.Reader) {
     return (
       <Reader 
@@ -326,72 +218,8 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className={`min-h-screen flex flex-col transition-colors duration-500 animate-fadeIn ${themeClasses}`}>
+    <div className={`min-h-screen flex flex-col transition-colors duration-500 ${themeClasses}`}>
       
-      {/* Toast Notification */}
-      {toast && (
-        <div className={`fixed top-20 left-1/2 -translate-x-1/2 z-[100] px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-3 animate-slideUp font-bold text-sm border ${toast.type === 'success' ? 'bg-emerald-500 text-white border-emerald-400' : 'bg-rose-500 text-white border-rose-400'}`}>
-          {toast.type === 'success' ? <Check className="w-5 h-5" /> : <AlertCircle className="w-5 h-5" />}
-          {toast.message}
-        </div>
-      )}
-
-      {/* Google Login Modal Simulation */}
-      {showLoginModal && (
-        <div className="fixed inset-0 z-[110] flex items-center justify-center p-6 bg-black/60 backdrop-blur-sm animate-fadeIn">
-          <div className="bg-white w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden animate-scaleUp">
-            <div className="p-8 space-y-6">
-              <div className="flex flex-col items-center text-center space-y-4">
-                <div className="w-12 h-12 flex items-center justify-center">
-                  <svg viewBox="0 0 24 24" width="48" height="48" xmlns="http://www.w3.org/2000/svg"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/><path d="M1 1h22v22H1z" fill="none"/></svg>
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold text-slate-900">Sign in with Google</h3>
-                  <p className="text-sm text-slate-500 mt-1">to continue to Sacred Melodies</p>
-                </div>
-              </div>
-
-              <form onSubmit={handleGoogleLoginSubmit} className="space-y-4">
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-500 ml-1 uppercase tracking-widest">Your Full Name</label>
-                  <input 
-                    type="text" 
-                    required
-                    placeholder="e.g. Sobuj Biswas"
-                    value={loginForm.name}
-                    onChange={(e) => setLoginForm({ ...loginForm, name: e.target.value })}
-                    className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-indigo-100 transition-all text-slate-900 font-medium"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-500 ml-1 uppercase tracking-widest">Email Address</label>
-                  <input 
-                    type="email" 
-                    required
-                    placeholder="name@gmail.com"
-                    value={loginForm.email}
-                    onChange={(e) => setLoginForm({ ...loginForm, email: e.target.value })}
-                    className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-indigo-100 transition-all text-slate-900 font-medium"
-                  />
-                </div>
-                <div className="pt-2 flex flex-col gap-3">
-                  <button type="submit" className="w-full bg-indigo-600 text-white py-4 rounded-2xl font-black text-sm shadow-xl shadow-indigo-100 hover:bg-indigo-700 active:scale-95 transition-all">
-                    NEXT
-                  </button>
-                  <button type="button" onClick={() => setShowLoginModal(false)} className="w-full text-slate-400 py-3 rounded-2xl font-bold text-sm hover:text-slate-600 transition-colors">
-                    CANCEL
-                  </button>
-                </div>
-              </form>
-            </div>
-            <div className="bg-slate-50 px-8 py-4 border-t border-slate-100 flex items-center justify-between text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-              <span>Secure Login</span>
-              <ShieldCheck className="w-4 h-4" />
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Desktop & Mobile Navigation Header */}
       <header className={`fixed top-0 left-0 right-0 z-50 h-16 border-b backdrop-blur-xl transition-all ${theme === Theme.Dark ? 'bg-slate-900/80 border-slate-800' : 'bg-white/80 border-slate-200 shadow-sm'}`}>
         <div className="max-w-6xl mx-auto px-6 h-full flex items-center justify-between">
@@ -461,7 +289,7 @@ const App: React.FC = () => {
                    </div>
                    <input 
                       type="text" 
-                      placeholder="গান খুঁজুন অথবা যেকোনো গানের লিরিক্স AI কে জিজ্ঞাসা করুন..."
+                      placeholder="Search songs or ask AI for any hymn..."
                       value={searchQuery}
                       onChange={(e) => {
                         setSearchQuery(e.target.value);
@@ -476,7 +304,7 @@ const App: React.FC = () => {
                         disabled={isSearchingAI || !searchQuery.trim()}
                         className="bg-indigo-600 text-white px-5 py-2.5 rounded-full text-[10px] font-black flex items-center gap-2 hover:bg-indigo-700 active:scale-95 transition-all disabled:opacity-50 disabled:pointer-events-none shadow-lg shadow-indigo-200"
                      >
-                        {isSearchingAI ? "খুঁজছি..." : <><Wand2 className="w-4 h-4" /> AI সার্চ</>}
+                        {isSearchingAI ? "FINDING..." : <><Wand2 className="w-4 h-4" /> AI SEARCH</>}
                      </button>
                    </div>
                 </div>
@@ -545,7 +373,7 @@ const App: React.FC = () => {
                              }`}
                            >
                              {isStudySaved ? <Check className="w-5 h-5" /> : <Bookmark className="w-5 h-5" />}
-                             <span className="text-xs font-black uppercase tracking-widest">{isStudySaved ? 'লাইব্রেরিতে আছে' : 'সেভ করুন'}</span>
+                             <span className="text-xs font-black uppercase tracking-widest">{isStudySaved ? 'Saved to Library' : 'Save Study'}</span>
                            </button>
 
                            <button 
@@ -557,7 +385,7 @@ const App: React.FC = () => {
                              }`}
                            >
                              {isStudyShared ? <Check className="w-5 h-5 text-emerald-500" /> : <Share2 className="w-5 h-5" />}
-                             <span className="text-xs font-black uppercase tracking-widest">শেয়ার করুন</span>
+                             <span className="text-xs font-black uppercase tracking-widest">Share Insight</span>
                            </button>
                         </div>
                       )}
@@ -569,7 +397,7 @@ const App: React.FC = () => {
           {activeTab === AppTab.Reflections && (
              <div className="space-y-12">
                 <div className="text-center md:text-left">
-                  <h2 className="text-5xl font-black tracking-tighter mb-4 leading-none">আপনার লাইব্রেরি</h2>
+                  <h2 className="text-5xl font-black tracking-tighter mb-4 leading-none">Your Library</h2>
                   <p className="text-lg opacity-80 font-medium">আপনার প্রিয় গান এবং স্টাডি নোটগুলি এখানে সংরক্ষিত আছে।</p>
                 </div>
                 
@@ -584,7 +412,7 @@ const App: React.FC = () => {
                              <div className="flex-1">
                                 <h3 className={`text-xl font-black ${textTitleClasses}`}>{song.title}</h3>
                                 <p className={`opacity-60 italic text-sm ${textMutedClasses}`}>{song.reference}</p>
-                                <button onClick={() => {setSelectedSong(song); setActiveTab(AppTab.Reader);}} className="mt-3 text-indigo-500 font-bold text-xs uppercase tracking-widest flex items-center gap-1">এখন পড়ুন <ChevronRight className="w-4 h-4" /></button>
+                                <button onClick={() => {setSelectedSong(song); setActiveTab(AppTab.Reader);}} className="mt-3 text-indigo-500 font-bold text-xs uppercase tracking-widest flex items-center gap-1">Read Now <ChevronRight className="w-4 h-4" /></button>
                              </div>
                              <div className="flex flex-col gap-2">
                                 <button onClick={() => toggleFavorite(song.id)} className="p-3 bg-rose-100 dark:bg-rose-900/30 text-rose-500 rounded-2xl shrink-0 hover:scale-110 transition-all"><Trash2 className="w-5 h-5" /></button>
@@ -612,7 +440,7 @@ const App: React.FC = () => {
                                }}
                                className="text-indigo-500 font-bold text-xs uppercase tracking-widest flex items-center gap-1"
                              >
-                               সম্পূর্ণ ব্যাখ্যা <ChevronRight className="w-4 h-4" />
+                               Read Full Study <ChevronRight className="w-4 h-4" />
                              </button>
                           </div>
                         ))}
@@ -620,8 +448,7 @@ const App: React.FC = () => {
                    ) : (
                       <div className="col-span-full py-20 text-center opacity-40">
                          <CloudOff className="w-16 h-16 mx-auto mb-4" />
-                         <p className="text-xl font-bold">এখানে কিছুই নেই।</p>
-                         <p className="mt-2">প্রিয় গান বা স্টাডি নোট সেভ করলে এখানে দেখা যাবে।</p>
+                         <p className="text-xl font-bold">No saved items found.</p>
                       </div>
                    )}
                 </div>
@@ -652,12 +479,12 @@ const App: React.FC = () => {
                             <div className={`p-8 rounded-[3rem] border shadow-sm flex flex-col items-center justify-center gap-2 ${cardBgClasses}`}>
                                <Heart className="w-8 h-8 text-rose-500 mb-2" />
                                <p className={`text-4xl font-black ${textTitleClasses}`}>{favorites.length}</p>
-                               <p className="text-xs font-black opacity-40 uppercase tracking-widest">প্রিয় গান</p>
+                               <p className="text-xs font-black opacity-40 uppercase tracking-widest">Favorite Songs</p>
                             </div>
                             <div className={`p-8 rounded-[3rem] border shadow-sm flex flex-col items-center justify-center gap-2 ${cardBgClasses}`}>
                                <Bookmark className="w-8 h-8 text-amber-500 mb-2" />
                                <p className={`text-4xl font-black ${textTitleClasses}`}>{savedStudies.length}</p>
-                               <p className="text-xs font-black opacity-40 uppercase tracking-widest">সংরক্ষিত নোট</p>
+                               <p className="text-xs font-black opacity-40 uppercase tracking-widest">Insights</p>
                             </div>
                          </div>
 
@@ -667,7 +494,7 @@ const App: React.FC = () => {
                                <ChevronRight className="w-6 h-6 opacity-40 group-hover:opacity-100 group-hover:translate-x-2 transition-all" />
                             </button>
                             <button onClick={handleLogout} className="w-full p-8 bg-rose-50 dark:bg-rose-900/20 text-rose-600 rounded-[3rem] font-black uppercase tracking-widest text-xs flex items-center justify-center gap-3 hover:bg-rose-100 transition-all">
-                               <LogOut className="w-6 h-6" /> সাইন আউট করুন
+                               <LogOut className="w-6 h-6" /> Sign Out from Account
                             </button>
                          </div>
                       </div>
@@ -679,7 +506,7 @@ const App: React.FC = () => {
                         <LogIn className="w-12 h-12" />
                       </div>
                       <div className="space-y-2">
-                        <h2 className={`text-4xl font-black tracking-tight ${textTitleClasses}`}>সক্রেড মেলোডিজে যুক্ত হন</h2>
+                        <h2 className={`text-4xl font-black tracking-tight ${textTitleClasses}`}>Join Sacred Melodies</h2>
                         <p className={`opacity-80 text-lg font-medium leading-relaxed ${textMutedClasses}`}>লগইন করুন আপনার প্রিয় গান এবং স্টাডি নোটগুলি সব ডিভাইসে সিনক্রোনাইজ করতে।</p>
                       </div>
                     </div>
@@ -687,7 +514,7 @@ const App: React.FC = () => {
                     <div className="space-y-4">
                       <button 
                         disabled={!!isLoggingIn}
-                        onClick={() => setShowLoginModal(true)}
+                        onClick={() => handleSocialLogin('google')}
                         className={`w-full py-5 px-8 rounded-3xl border font-black text-sm flex items-center justify-center gap-4 transition-all hover:shadow-xl active:scale-95 disabled:opacity-50 ${theme === Theme.Dark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-slate-200'}`}
                       >
                         {isLoggingIn === 'google' ? <Loader2 className="w-6 h-6 animate-spin" /> : <Chrome className="w-6 h-6 text-rose-500" />}
@@ -705,7 +532,7 @@ const App: React.FC = () => {
                     </div>
 
                     <div className="pt-8 border-t border-slate-100 dark:border-slate-800">
-                      <button onClick={() => setActiveTab(AppTab.Developer)} className="text-xs font-black opacity-40 uppercase tracking-[0.2em] hover:opacity-100 transition-opacity">ডেভেলপারের সাথে পরিচিত হন</button>
+                      <button onClick={() => setActiveTab(AppTab.Developer)} className="text-xs font-black opacity-40 uppercase tracking-[0.2em] hover:opacity-100 transition-opacity">Meet the Developer</button>
                     </div>
                   </div>
                 )}
