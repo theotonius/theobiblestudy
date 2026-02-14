@@ -12,7 +12,7 @@ export interface UserProfile {
   name: string;
   email: string;
   photo: string;
-  provider: 'google' | 'facebook';
+  provider?: 'google' | 'facebook';
 }
 
 export interface SavedStudy {
@@ -22,9 +22,13 @@ export interface SavedStudy {
   timestamp: number;
 }
 
-export interface Reflection {
+export interface Message {
+  id: string;
   text: string;
-  verse: string;
+  senderId: string;
+  senderName: string;
+  senderPhoto: string;
+  timestamp: number;
 }
 
 export enum Theme {
@@ -38,6 +42,7 @@ export enum AppTab {
   Reader = 'reader',
   Reflections = 'reflections',
   Study = 'study',
+  Chat = 'chat',
   Profile = 'profile',
   Developer = 'developer'
 }

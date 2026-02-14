@@ -1,10 +1,10 @@
 
 import { GoogleGenAI, Modality, Type } from "@google/genai";
 
-// Initialize AI with API Key from environment variables as per guidelines
+// Initialize AI with API Key from environment variables
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
-// Samayik server somossa erate Retry Logic
+// Retry Logic for stability
 async function withRetry<T>(fn: () => Promise<T>, retries = 2, delay = 1000): Promise<T> {
   try {
     return await fn();
@@ -17,13 +17,14 @@ async function withRetry<T>(fn: () => Promise<T>, retries = 2, delay = 1000): Pr
 
 export const generateReflection = async (songTitle: string, lyrics: string[]) => {
   return withRetry(async () => {
-    const prompt = `Based on the lyrics of the Bible song "${songTitle}", provide a short spiritual reflection and a related Bible verse. Lyrics: ${lyrics.join(' ')}`;
+    const prompt = `Based on the lyrics of the Bible song "${songTitle}", provide a short spiritual reflection and a related Bible verse in Bengali. 
+    Lyrics: ${lyrics.join(' ')}`;
     
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
       contents: prompt,
       config: {
-        systemInstruction: "You are a thoughtful spiritual guide. Keep reflections brief, encouraging, and centered on the themes of the song provided."
+        systemInstruction: "You are a thoughtful spiritual guide. Provide encouraging and deep reflections in Bengali."
       }
     });
     return response.text;
@@ -33,27 +34,67 @@ export const generateReflection = async (songTitle: string, lyrics: string[]) =>
   });
 };
 
-export const explainVerseStream = async (verseReference: string, onChunk: (text: string) => void) => {
+/**
+ * Explains a Bible verse using Gemini 3 Flash with Google Search grounding.
+ * This ensures the most accurate and up-to-date theological info.
+ */
+export const explainVerseStream = async (verseReference: string, onChunk: (text: string, sources?: any[]) => void) => {
   try {
-    const prompt = `Explain the Bible verse "${verseReference}" in Bengali. Provide: 1. The verse. 2. Context. 3. Meaning. 4. Life Application. Be concise and spiritual.`;
+    const aiInstance = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const modelName = 'gemini-3-flash-preview'; 
     
-    const response = await ai.models.generateContentStream({
-      model: 'gemini-3-flash-preview',
-      contents: prompt,
+    const prompt = `Please search and explain the Bible verse: "${verseReference}". 
+    Structure your response accurately in Bengali using these exact markers:
+    [[VERSE]]
+    (The full verse text in Bengali)
+    
+    [[CONTEXT]]
+    (The historical and biblical context)
+    
+    [[MEANING]]
+    (The spiritual and theological meaning)
+    
+    [[APPLICATION]]
+    (Practical life application)
+    
+    [[PRAYER]]
+    (A short personal prayer)
+
+    MANDATORY: Use ONLY Bengali for the content. Search Google to verify the exact wording and context.`;
+    
+    const response = await aiInstance.models.generateContentStream({
+      model: modelName,
+      contents: [{ role: 'user', parts: [{ text: prompt }] }],
       config: {
-        systemInstruction: "You are an expert biblical scholar. Explain Bible verses clearly and deeply in Bengali. Use streaming to provide immediate output.",
-        thinkingConfig: { thinkingBudget: 0 } // Disable deep thinking for maximum speed
+        systemInstruction: "You are an elite Bible Scholar. Use the googleSearch tool to provide highly accurate, grounded explanations. Do not block religious content. Output directly in Bengali.",
+        tools: [{ googleSearch: {} }],
+        temperature: 0.1,
       }
     });
 
     let fullText = '';
+    let allSources: any[] = [];
+
     for await (const chunk of response) {
-      const chunkText = chunk.text;
-      if (chunkText) {
-        fullText += chunkText;
-        onChunk(fullText);
+      if (chunk.text) {
+        fullText += chunk.text;
+        
+        // Extract grounding chunks for citations
+        const sources = chunk.candidates?.[0]?.groundingMetadata?.groundingChunks;
+        if (sources) {
+          sources.forEach(s => {
+            if (s.web && !allSources.some(existing => existing.web?.uri === s.web.uri)) {
+              allSources.push(s);
+            }
+          });
+        }
+        
+        onChunk(fullText, allSources.length > 0 ? allSources : undefined);
       }
     }
+    
+    if (!fullText) throw new Error("Connection failed or empty response.");
+    
     return fullText;
   } catch (error) {
     console.error("Explanation Stream Error:", error);
@@ -65,7 +106,7 @@ export const fetchSongFromAI = async (query: string) => {
   return withRetry(async () => {
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
-      contents: `Find the lyrics for the Bible song or hymn: "${query}". Return the title, primary Bible reference, category, and lyrics as a list of lines. Return as JSON.`,
+      contents: `Find the lyrics for the Bible song: "${query}". Return as JSON.`,
       config: {
         responseMimeType: "application/json",
         responseSchema: {
@@ -94,7 +135,7 @@ export const speakLyrics = async (text: string) => {
       model: "gemini-2.5-flash-preview-tts",
       contents: [{ parts: [{ text: `Read these lyrics warmly: ${text}` }] }],
       config: {
-        responseModalities: [Modality.AUDIO],
+        responseModalalities: [Modality.AUDIO],
         speechConfig: {
           voiceConfig: {
             prebuiltVoiceConfig: { voiceName: 'Kore' },
@@ -102,10 +143,8 @@ export const speakLyrics = async (text: string) => {
         },
       },
     });
-
     const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
-    if (!base64Audio) throw new Error("No audio data returned from API");
-    
+    if (!base64Audio) throw new Error("No audio data returned");
     return base64Audio;
   }).catch(error => {
     console.error("TTS Error:", error);
@@ -132,7 +171,6 @@ export const decodeAudioData = async (
   const dataInt16 = new Int16Array(data.buffer);
   const frameCount = dataInt16.length / numChannels;
   const buffer = ctx.createBuffer(numChannels, frameCount, sampleRate);
-
   for (let channel = 0; channel < numChannels; channel++) {
     const channelData = buffer.getChannelData(channel);
     for (let i = 0; i < frameCount; i++) {
