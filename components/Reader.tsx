@@ -1,11 +1,12 @@
+
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Song, Theme } from '../types';
-import { Play, Pause, Sparkles, ChevronLeft, Heart, Type as FontIcon, Share2, Check } from 'lucide-react';
+import { Play, Pause, Sparkles, ChevronLeft, Heart, Type as FontIcon, Share2, Check, Volume2 } from 'lucide-react';
 import { generateReflection, speakLyrics, decodeBase64Audio, decodeAudioData } from '../services/geminiService';
 
 interface ReaderProps {
   song: Song;
-  onBack: void | (() => void);
+  onBack: () => void;
   isFavorite: boolean;
   onToggleFavorite: (id: string) => void;
   theme: Theme;
@@ -45,7 +46,7 @@ const Reader: React.FC<ReaderProps> = ({ song, onBack, isFavorite, onToggleFavor
   const handleGetReflection = async () => {
     setIsLoadingReflection(true);
     const text = await generateReflection(song.title, song.lyrics);
-    setReflection(text || "Unable to load reflection.");
+    setReflection(text || "ব্যাখ্যা লোড করা সম্ভব হয়নি।");
     setIsLoadingReflection(false);
   };
 
@@ -54,24 +55,18 @@ const Reader: React.FC<ReaderProps> = ({ song, onBack, isFavorite, onToggleFavor
     
     try {
       if (navigator.share) {
-        const shareData: ShareData = {
+        await navigator.share({
           title: song.title,
           text: shareText,
-        };
-        
-        // Only include URL if it's a standard web URL (http/https) to avoid "Invalid URL" errors
-        // This prevents crashes in local development or sandboxed environments
-        if (window.location.protocol.startsWith('http')) {
-          shareData.url = window.location.href;
-        }
-
-        await navigator.share(shareData);
+          url: window.location.protocol.startsWith('http') ? window.location.href : undefined
+        });
       } else {
-        throw new Error('Web Share API not available');
+        await navigator.clipboard.writeText(shareText);
+        setIsShared(true);
+        setTimeout(() => setIsShared(false), 2000);
       }
     } catch (err) {
-      console.error("Share failed, falling back to clipboard:", err);
-      // Universal fallback: copy to clipboard if share fails or is not supported
+      console.error("Share failed:", err);
       try {
         await navigator.clipboard.writeText(shareText);
         setIsShared(true);
@@ -116,102 +111,134 @@ const Reader: React.FC<ReaderProps> = ({ song, onBack, isFavorite, onToggleFavor
   };
 
   useEffect(() => {
-    return () => { if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current); sourceNodeRef.current?.stop(); };
+    return () => { 
+      if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current); 
+      sourceNodeRef.current?.stop(); 
+    };
   }, []);
 
   return (
-    <div className={`flex flex-col min-h-screen transition-colors duration-500 overflow-x-hidden relative ${themeClasses}`}>
+    <div className={`flex flex-col min-h-screen transition-colors duration-500 overflow-hidden relative ${themeClasses}`}>
       
-      {/* Subtle Atmospheric Background */}
+      {/* Dynamic Atmospheric Backgrounds */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
         {theme === Theme.Dark && (
-          <>
+          <div className="absolute inset-0">
             <div className="absolute top-1/4 -left-20 w-80 h-80 bg-indigo-500/10 blur-[100px] animate-celestial" />
             <div className="absolute bottom-1/4 -right-20 w-96 h-96 bg-purple-500/10 blur-[120px] animate-celestial" style={{ animationDelay: '-5s' }} />
-          </>
+            {/* Stars with twinkling */}
+            {[...Array(40)].map((_, i) => (
+              <div 
+                key={i} 
+                className="absolute w-1 h-1 bg-white rounded-full animate-twinkle" 
+                style={{ 
+                  top: `${Math.random() * 100}%`, 
+                  left: `${Math.random() * 100}%`, 
+                  animationDelay: `${Math.random() * 5}s`,
+                  animationDuration: `${2 + Math.random() * 4}s`
+                }} 
+              />
+            ))}
+          </div>
+        )}
+        
+        {theme === Theme.Sepia && (
+          <div className="absolute inset-0 opacity-40 mix-blend-multiply pointer-events-none overflow-hidden">
+            <div 
+              className="absolute inset-[-10%] animate-parchment"
+              style={{
+                backgroundImage: `radial-gradient(circle at 50% 50%, rgba(139, 109, 77, 0.08) 0%, transparent 100%), 
+                                  url("https://www.transparenttextures.com/patterns/handmade-paper.png")`,
+                backgroundSize: '300px 300px'
+              }}
+            />
+            {/* Additional texture layer */}
+            <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/parchment.png')] animate-pulse" />
+          </div>
+        )}
+
+        {theme === Theme.Light && (
+          <div className="absolute inset-0 opacity-[0.04] pointer-events-none overflow-hidden">
+            {/* Slow moving waves */}
+            <svg className="absolute bottom-[-10%] left-0 w-[200%] h-full animate-wave" viewBox="0 0 1440 320" preserveAspectRatio="none">
+              <path fill="#6366f1" d="M0,192L48,176C96,160,192,128,288,112C384,96,480,96,576,128C672,160,768,224,864,229.3C960,235,1056,181,1152,144C1248,107,1344,85,1392,74.7L1440,64L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path>
+            </svg>
+            <svg className="absolute bottom-[-5%] left-[-50%] w-[200%] h-full animate-wave" style={{ animationDelay: '-12s', opacity: 0.6 }} viewBox="0 0 1440 320" preserveAspectRatio="none">
+              <path fill="#818cf8" d="M0,64L48,80C96,96,192,128,288,122.7C384,117,480,75,576,85.3C672,96,768,160,864,165.3C960,171,1056,117,1152,112C1248,107,1344,149,1392,170.7L1440,192L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path>
+            </svg>
+          </div>
         )}
       </div>
 
-      {/* Dynamic Header */}
-      <div className={`sticky top-0 z-50 border-b backdrop-blur-xl ${theme === Theme.Dark ? 'bg-slate-900/80 border-slate-800' : 'bg-white/80 border-slate-200'}`}>
-        <div className="max-w-6xl mx-auto px-6 h-16 md:h-20 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <button onClick={onBack as any} className={`p-3 rounded-2xl transition-all active:scale-90 ${theme === Theme.Dark ? 'hover:bg-slate-800' : 'hover:bg-slate-50'}`}>
-              <ChevronLeft className="w-6 h-6" />
-            </button>
-            <div className="hidden sm:block">
-               <h1 className="text-sm font-black leading-none">{song.title}</h1>
-               <p className="text-[10px] opacity-50 uppercase tracking-widest mt-1">{song.reference}</p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <button onClick={() => onToggleFavorite(song.id)} className={`p-3 rounded-2xl transition-all ${isFavorite ? 'text-rose-500 scale-110 bg-rose-50 dark:bg-rose-900/20' : 'opacity-40 hover:opacity-100'}`}>
-              <Heart className={`w-6 h-6 ${isFavorite ? 'fill-current' : ''}`} />
-            </button>
-            <button onClick={handleShareSong} className={`p-3 rounded-2xl transition-all active:scale-95 ${theme === Theme.Dark ? 'hover:bg-slate-800' : 'hover:bg-slate-50'}`} title="Share lyrics">
-              {isShared ? <Check className="w-6 h-6 text-emerald-500" /> : <Share2 className="w-6 h-6" />}
-            </button>
-            <button onClick={() => setFontSize(prev => prev >= 48 ? 16 : prev + 4)} className={`p-3 rounded-2xl transition-all ${theme === Theme.Dark ? 'hover:bg-slate-800' : 'hover:bg-slate-50'}`}>
-              <FontIcon className="w-6 h-6" />
-            </button>
-            <button onClick={handlePlayAudio} className={`p-3 rounded-2xl transition-all ${isSpeaking ? 'bg-indigo-600 text-white shadow-xl shadow-indigo-200' : (theme === Theme.Dark ? 'hover:bg-slate-800' : 'hover:bg-slate-50')}`}>
-              {isSpeaking ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6" />}
-            </button>
-          </div>
+      <header className="relative z-10 px-6 h-16 md:h-24 flex items-center justify-between">
+        <button onClick={onBack} className="p-3 rounded-2xl hover:bg-black/5 dark:hover:bg-white/5 transition-all"><ChevronLeft className="w-6 h-6" /></button>
+        <div className="flex items-center gap-2">
+          <button onClick={() => setFontSize(prev => Math.max(16, prev - 2))} className="p-3 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-all"><FontIcon className="w-4 h-4 opacity-50" /></button>
+          <span className="text-[10px] font-black w-8 text-center opacity-40">{fontSize}</span>
+          <button onClick={() => setFontSize(prev => Math.min(48, prev + 2))} className="p-3 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-all"><FontIcon className="w-5 h-5" /></button>
         </div>
-
-        {isSpeaking && (
-          <div className="max-w-6xl mx-auto px-6 pb-2">
-            <div className="flex items-center gap-4">
-              <span className="text-[10px] font-black w-10 opacity-60 tracking-tighter">{formatTime(currentTime)}</span>
-              <div className={`flex-1 h-1.5 rounded-full overflow-hidden ${theme === Theme.Dark ? 'bg-slate-800' : 'bg-slate-100'}`}>
-                <div className="h-full bg-indigo-500 transition-all duration-100 ease-linear shadow-[0_0_10px_rgba(99,102,241,0.5)]" style={{ width: `${duration > 0 ? (currentTime / duration) * 100 : 0}%` }} />
-              </div>
-              <span className="text-[10px] font-black w-10 text-right opacity-40 tracking-tighter">{formatTime(duration)}</span>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Content Area */}
-      <div className="flex-1 max-w-4xl mx-auto w-full px-8 py-12 md:py-20 selection:bg-indigo-100 relative z-10">
-        <div className="space-y-10 md:space-y-12">
-          {song.lyrics.map((line, idx) => (
-            <p 
-              key={idx} 
-              className={`font-serif leading-relaxed text-center transition-all duration-500 ${line === "" ? "py-6" : ""}`}
-              style={{ fontSize: `${fontSize}px`, color: theme === Theme.Dark ? '#f1f5f9' : theme === Theme.Sepia ? '#433422' : '#0f172a' }}
-            >
-              {line}
-            </p>
-          ))}
+        <div className="flex items-center gap-2">
+          <button onClick={handleShareSong} className={`p-3 rounded-2xl transition-all ${isShared ? 'bg-emerald-500 text-white' : 'hover:bg-black/5 dark:hover:bg-white/5'}`}>{isShared ? <Check className="w-6 h-6" /> : <Share2 className="w-6 h-6" />}</button>
+          <button onClick={() => onToggleFavorite(song.id)} className={`p-3 rounded-2xl transition-all ${isFavorite ? 'text-rose-500 bg-rose-500/10' : 'hover:bg-black/5 dark:hover:bg-white/5'}`}><Heart className={`w-6 h-6 ${isFavorite ? 'fill-current' : ''}`} /></button>
         </div>
+      </header>
 
-        {/* AI Insight Section */}
-        <div className="mt-20 max-w-2xl mx-auto relative z-20">
-          {!reflection && !isLoadingReflection ? (
-            <button onClick={handleGetReflection} className={`w-full py-6 px-8 rounded-3xl border flex items-center justify-center gap-3 transition-all hover:scale-[1.02] hover:shadow-xl font-black text-xs uppercase tracking-widest ${theme === Theme.Dark ? 'bg-indigo-900/20 border-indigo-500/30 text-indigo-400' : 'bg-white border-indigo-100 text-indigo-600 shadow-sm'}`}>
-              <Sparkles className="w-5 h-5" /> Generate AI Reflection
-            </button>
-          ) : (
-            <div className={`rounded-[3rem] p-8 md:p-12 shadow-2xl border page-transition ${cardClasses}`}>
-              <div className="flex items-center gap-3 mb-6 text-indigo-500">
-                <Sparkles className="w-6 h-6" />
-                <span className="text-[10px] font-black uppercase tracking-[0.3em]">Spiritual Insight</span>
-              </div>
-              {isLoadingReflection ? (
-                <div className="space-y-4 animate-pulse">
-                  <div className={`h-4 rounded-full w-full ${theme === Theme.Dark ? 'bg-slate-700' : 'bg-indigo-50'}`}></div>
-                  <div className={`h-4 rounded-full w-5/6 ${theme === Theme.Dark ? 'bg-slate-700' : 'bg-indigo-50'}`}></div>
+      <main className="relative z-10 flex-1 overflow-y-auto px-6 md:px-12 pb-32">
+        <div className="max-w-3xl mx-auto space-y-12 py-8">
+          <div className="text-center space-y-4">
+            <span className={`text-[10px] font-black uppercase tracking-[0.3em] px-4 py-1.5 rounded-full border ${theme === Theme.Dark ? 'border-indigo-500/30 text-indigo-400' : 'border-indigo-100 text-indigo-600'}`}>{song.category}</span>
+            <h1 className="text-4xl md:text-6xl font-black tracking-tighter leading-none">{song.title}</h1>
+            <p className="opacity-40 italic font-medium">{song.reference}</p>
+          </div>
+
+          <article style={{ fontSize: `${fontSize}px` }} className="font-serif leading-relaxed text-center space-y-2 max-w-2xl mx-auto md:px-8">
+            {song.lyrics.map((line, i) => (
+              <p key={i} className={line === "" ? "h-6" : "animate-fadeIn"} style={{ animationDelay: `${i * 0.05}s` }}>{line}</p>
+            ))}
+          </article>
+
+          <div className="pt-12">
+            {!reflection && !isLoadingReflection ? (
+               <button onClick={handleGetReflection} className={`w-full group p-8 rounded-[3rem] border border-dashed transition-all hover:border-solid hover:scale-[1.01] hover:shadow-2xl flex flex-col items-center gap-4 ${cardClasses}`}>
+                  <div className="w-14 h-14 bg-indigo-600 rounded-2xl flex items-center justify-center text-white shadow-xl group-hover:rotate-12 transition-transform"><Sparkles className="w-7 h-7" /></div>
+                  <div className="text-center">
+                    <h3 className="text-lg font-black tracking-tight">AI Reflection</h3>
+                    <p className="text-xs opacity-50 font-medium mt-1">এই গানের একটি গভীর ব্যাখ্যা ও প্রার্থনা দেখুন।</p>
+                  </div>
+               </button>
+            ) : (
+              <div className={`p-8 md:p-12 rounded-[3.5rem] border shadow-2xl space-y-6 page-transition ${cardClasses}`}>
+                <div className="flex items-center gap-3">
+                  <Sparkles className="w-5 h-5 text-indigo-600" />
+                  <span className="text-[10px] font-black uppercase tracking-widest opacity-40">Gemini Insights</span>
                 </div>
-              ) : (
-                <p className="text-xl md:text-2xl font-serif leading-relaxed italic opacity-80">{reflection}</p>
-              )}
-            </div>
-          )}
+                <div className={`text-xl md:text-2xl font-serif leading-relaxed italic ${isLoadingReflection ? 'animate-pulse' : ''}`}>
+                  {isLoadingReflection ? 'ব্যাখ্যা তৈরি হচ্ছে...' : reflection}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
-      </div>
+      </main>
+
+      <footer className={`fixed bottom-0 left-0 right-0 z-50 p-6 transition-all ${themeClasses} border-t border-black/5`}>
+        <div className="max-w-2xl mx-auto bg-indigo-600 rounded-[2.5rem] p-4 flex items-center gap-6 shadow-2xl shadow-indigo-500/40 border border-white/10 ring-8 ring-white/5">
+           <button onClick={handlePlayAudio} className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center text-indigo-600 shadow-xl hover:scale-110 active:scale-95 transition-all">
+             {isSpeaking ? <Pause className="w-6 h-6 fill-current" /> : <Play className="w-6 h-6 fill-current ml-1" />}
+           </button>
+           
+           <div className="flex-1 space-y-2">
+              <div className="h-1.5 bg-indigo-800 rounded-full overflow-hidden relative">
+                 <div className="absolute inset-y-0 left-0 bg-white transition-all duration-300" style={{ width: `${(currentTime / duration) * 100}%` }} />
+              </div>
+              <div className="flex justify-between text-[10px] font-black text-white/60 uppercase tracking-widest">
+                 <span>{formatTime(currentTime)}</span>
+                 <span className="flex items-center gap-1"><Volume2 className="w-3 h-3" /> {isSpeaking ? 'Playing Grace' : 'Audio Guide'}</span>
+                 <span>{formatTime(duration)}</span>
+              </div>
+           </div>
+        </div>
+      </footer>
     </div>
   );
 };
