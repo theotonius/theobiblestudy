@@ -246,8 +246,10 @@ const App: React.FC = () => {
       });
     } catch (error: any) {
       console.error("Search Error:", error);
-      setVerseExplanation("দুঃখিত, তথ্য লোড করা সম্ভব হয়নি।");
+      const errorMsg = "দুঃখিত, তথ্য লোড করা সম্ভব হয়নি। আপনার ইন্টারনেট সংযোগ চেক করুন।";
+      setVerseExplanation(errorMsg);
       setIsExplaining(false);
+      showToast(errorMsg, "error");
     } finally {
       setIsExplaining(false);
     }
@@ -599,6 +601,10 @@ const App: React.FC = () => {
                                <Sparkles className="absolute -top-2 -right-2 w-5 h-5 text-amber-400 animate-pulse" />
                             </div>
                             <p className="font-black text-xs uppercase tracking-[0.3em] opacity-40 text-indigo-600/80">ব্যাখ্যা তৈরি হচ্ছে অনুগ্রহ করে অপেক্ষা করুন</p>
+                            <div className="flex items-center gap-2 text-[10px] font-black uppercase text-slate-300">
+                               <CloudLightning className="w-3 h-3 animate-pulse" />
+                               High Speed Grounding Active...
+                            </div>
                          </div>
                       ) : (
                         <>
