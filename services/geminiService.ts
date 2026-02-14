@@ -34,64 +34,46 @@ export const generateReflection = async (songTitle: string, lyrics: string[]) =>
 };
 
 /**
- * Explains a Bible verse using Gemini 3 Flash with high-speed Google Search.
- * Ensures the model triggers Google Search for real-time and historical accuracy.
+ * Explains a Bible verse using Gemini 3 Flash.
+ * Removed thinkingConfig to ensure maximum speed and compatibility.
  */
-export const explainVerseStream = async (verseReference: string, onChunk: (text: string, groundingSources?: any[]) => void) => {
+export const explainVerseStream = async (verseReference: string, onChunk: (text: string) => void) => {
   try {
-    const aiInstance = new GoogleGenAI({ apiKey: process.env.API_KEY });
     const modelName = 'gemini-3-flash-preview'; 
-    
-    // Explicitly demand the model to use Google Search for verification
-    const prompt = `Use Google Search to find accurate and deep theological information for: "${verseReference}". 
-    Provide a profound explanation in Bengali.
-    
+    const prompt = `Explain "${verseReference}" in Bengali profoundly.
     Follow this structure strictly:
+    
     [[VERSE]]
-    (Full text of the verse in Bengali)
+    (Full text of the verse)
     
     [[CONTEXT]]
-    (Historical and biblical context found via search)
+    (Historical context)
     
     [[MEANING]]
-    (Spiritual depth and insights)
+    (Deep spiritual meaning)
     
     [[APPLICATION]]
-    (Practical life application)
+    (Practical application)
     
     [[PRAYER]]
-    (A short relevant prayer)
+    (A short prayer)
 
-    Do not include conversational fillers. Start directly with [[VERSE]]. Always provide URLs as references.`;
+    Do not include any intro or conversational text. Start directly with [[VERSE]].`;
     
-    const response = await aiInstance.models.generateContentStream({
+    const response = await ai.models.generateContentStream({
       model: modelName,
       contents: prompt,
       config: {
-        systemInstruction: "You are an elite Bible Scholar and Researcher. You MUST use the googleSearch tool for every single request to cross-reference facts and find real-time scholarly information. Output only in Bengali. Always cite web sources.",
-        tools: [{ googleSearch: {} }],
-        temperature: 0, // Direct and fast
+        systemInstruction: "You are an elite Bible Scholar. Output deep Bengali explanations. Use double brackets for markers like [[VERSE]]. Start immediately.",
+        temperature: 0.2, 
       }
     });
 
     let fullText = '';
-    let allSources: any[] = [];
-
     for await (const chunk of response) {
       if (chunk.text) {
         fullText += chunk.text;
-        
-        // Extract grounding sources
-        const sources = chunk.candidates?.[0]?.groundingMetadata?.groundingChunks;
-        if (sources) {
-          sources.forEach(s => {
-            if (s.web && !allSources.some(existing => existing.web?.uri === s.web.uri)) {
-              allSources.push(s);
-            }
-          });
-        }
-        
-        onChunk(fullText, allSources.length > 0 ? allSources : undefined);
+        onChunk(fullText);
       }
     }
     return fullText;
