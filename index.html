@@ -11,6 +11,15 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,600;1,400&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <!-- Bengali Web Fonts CDN -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/maateen/bengali-web-fonts@master/font/SolaimanLipi/SolaimanLipi.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/maateen/bengali-web-fonts@master/font/Kalpurush/Kalpurush.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/maateen/bengali-web-fonts@master/font/SiyamRupali/SiyamRupali.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/maateen/bengali-web-fonts@master/font/Mukti/Mukti.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/maateen/bengali-web-fonts@master/font/Lohit/Lohit.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/maateen/bengali-web-fonts@master/font/BenSen/BenSen.css">
+
     <style>
       :root {
         --app-height: 100%;
@@ -30,12 +39,20 @@
       }
 
       body {
-        font-family: 'Inter', sans-serif;
+        font-family: 'Inter', 'SolaimanLipi', sans-serif;
         background-color: #fdfbf7;
         margin: 0;
         padding: 0;
         -webkit-tap-highlight-color: transparent;
       }
+
+      /* Font Classes */
+      .font-kalpurush { font-family: 'Kalpurush', sans-serif !important; }
+      .font-solaiman { font-family: 'SolaimanLipi', sans-serif !important; }
+      .font-siyam { font-family: 'SiyamRupali', sans-serif !important; }
+      .font-mukti { font-family: 'Mukti', sans-serif !important; }
+      .font-lohit { font-family: 'Lohit', sans-serif !important; }
+      .font-bensen { font-family: 'BenSen', cursive !important; }
       
       /* Global Custom Scrollbar */
       * {
