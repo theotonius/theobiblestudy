@@ -34,71 +34,48 @@ export const generateReflection = async (songTitle: string, lyrics: string[]) =>
 };
 
 /**
- * Explains a Bible verse using Gemini 3 Flash with mandatory Google Search grounding.
- * Optimized for live environments to prevent refusals or empty responses.
+ * Explains a Bible verse using Gemini 3 Flash for high speed.
  */
-export const explainVerseStream = async (verseReference: string, onChunk: (text: string, sources?: any[]) => void) => {
+export const explainVerseStream = async (verseReference: string, onChunk: (text: string) => void) => {
   try {
-    // Re-initializing to ensure fresh state for each live call
-    const aiInstance = new GoogleGenAI({ apiKey: process.env.API_KEY });
     const modelName = 'gemini-3-flash-preview'; 
+    const prompt = `Explain "${verseReference}" in Bengali profoundly.
+    Follow this structure strictly:
     
-    // The prompt is engineered to demand a search-based scholarly response
-    const prompt = `ACT AS A BIBLE SCHOLAR. 
-    TASK: Research and explain the Bible verse: "${verseReference}" in Bengali.
-    MANDATORY: You MUST use Google Search to verify the exact Bengali text and historical context.
-    
-    RESPONSE STRUCTURE:
     [[VERSE]]
-    (The full Bengali verse text)
+    (Full text of the verse)
     
     [[CONTEXT]]
-    (Historical and situational context from your search)
+    (Historical context)
     
     [[MEANING]]
-    (Deep spiritual and theological meaning)
+    (Deep spiritual meaning)
     
     [[APPLICATION]]
-    (How this applies to modern daily life)
+    (Practical application)
     
     [[PRAYER]]
-    (A short prayer related to this verse)
+    (A short prayer)
+
+    Do not include any conversational preamble. Just the markers and content. Start immediately with [[VERSE]].`;
     
-    If the verse is not found, state that you are searching alternative translations.
-    Cite your sources at the end. Output only in Bengali.`;
-    
-    const response = await aiInstance.models.generateContentStream({
+    const response = await ai.models.generateContentStream({
       model: modelName,
       contents: prompt,
       config: {
-        systemInstruction: "You are a specialized Bible Study AI. Your primary goal is to provide accurate, scholarly, and spiritual explanations in Bengali. You HAVE PERMISSION to discuss religious texts for educational purposes. ALWAYS use the googleSearch tool for accuracy. Do not refuse requests for Bible verse explanations.",
-        tools: [{ googleSearch: {} }],
-        temperature: 0.1, // Low temperature for factual consistency
+        systemInstruction: "You are an elite Bible Scholar. Output depth-filled Bengali explanations. Use exactly the provided markers in double brackets like [[VERSE]]. Be fast and direct.",
+        thinkingConfig: { thinkingBudget: 1024 }, // Minimal thinking for faster startup on Flash
+        temperature: 0.1, 
       }
     });
 
     let fullText = '';
-    let allSources: any[] = [];
-
     for await (const chunk of response) {
       if (chunk.text) {
         fullText += chunk.text;
-        const sources = chunk.candidates?.[0]?.groundingMetadata?.groundingChunks;
-        if (sources) {
-          sources.forEach(s => {
-            if (s.web && !allSources.some(existing => existing.web?.uri === s.web.uri)) {
-              allSources.push(s);
-            }
-          });
-        }
-        onChunk(fullText, allSources.length > 0 ? allSources : undefined);
+        onChunk(fullText);
       }
     }
-    
-    if (!fullText) {
-      throw new Error("Empty response from AI");
-    }
-    
     return fullText;
   } catch (error) {
     console.error("Explanation Stream Error:", error);
