@@ -8,7 +8,7 @@ import { Message } from "../types";
 const firebaseConfig = {
   apiKey: "AIzaSyCe5s56r7d4txfeXXMNq6notCs-XDk0JEA",
   authDomain: "theobiblestudy-bac71.firebaseapp.com",
-  databaseURL: "https://your-app-default-rtdb.firebaseio.com",
+  databaseURL: "https://theobiblestudy-bac71-default-rtdb.firebaseio.com",
   projectId: "theobiblestudy-bac71",
   storageBucket: "theobiblestudy-bac71.firebasestorage.app",
   messagingSenderId: "94907339663",
