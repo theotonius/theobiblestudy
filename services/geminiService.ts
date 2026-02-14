@@ -34,66 +34,46 @@ export const generateReflection = async (songTitle: string, lyrics: string[]) =>
 };
 
 /**
- * Explains a Bible verse using Gemini 3 Flash with mandatory Google Search.
- * Ensures the model looks for real-time information to provide accurate context.
+ * Explains a Bible verse using Gemini 3 Flash.
+ * Removed thinkingConfig to ensure maximum speed and compatibility.
  */
-export const explainVerseStream = async (verseReference: string, onChunk: (text: string, groundingSources?: any[]) => void) => {
+export const explainVerseStream = async (verseReference: string, onChunk: (text: string) => void) => {
   try {
-    // Creating a fresh instance to ensure the latest API configuration
-    const aiInstance = new GoogleGenAI({ apiKey: process.env.API_KEY });
     const modelName = 'gemini-3-flash-preview'; 
-    
-    // Explicit prompt to trigger web search for accurate theological and historical info
-    const prompt = `Please use Google Search to find accurate information about the Bible verse or topic: "${verseReference}". 
-    Then, provide a profound explanation in Bengali.
-    
-    Structure your response strictly as:
+    const prompt = `Explain "${verseReference}" in Bengali profoundly.
+    Follow this structure strictly:
     
     [[VERSE]]
-    (The full verse text in Bengali and English if available)
+    (Full text of the verse)
     
     [[CONTEXT]]
-    (Search-backed historical and biblical context)
+    (Historical context)
     
     [[MEANING]]
-    (Deep spiritual meaning and theological insights)
+    (Deep spiritual meaning)
     
     [[APPLICATION]]
-    (Practical life application)
+    (Practical application)
     
     [[PRAYER]]
-    (A relevant short prayer)
+    (A short prayer)
 
-    Note: Always include relevant website URLs from your search as grounding sources. Start directly with [[VERSE]].`;
+    Do not include any intro or conversational text. Start directly with [[VERSE]].`;
     
-    const response = await aiInstance.models.generateContentStream({
+    const response = await ai.models.generateContentStream({
       model: modelName,
       contents: prompt,
       config: {
-        systemInstruction: "You are an elite Bible Scholar. Use the googleSearch tool for every query to verify facts, cross-reference scriptures, and provide up-to-date context. Output only in Bengali. Always cite your sources.",
-        tools: [{ googleSearch: {} }],
-        temperature: 0.2,
+        systemInstruction: "You are an elite Bible Scholar. Output deep Bengali explanations. Use double brackets for markers like [[VERSE]]. Start immediately.",
+        temperature: 0.2, 
       }
     });
 
     let fullText = '';
-    let allSources: any[] = [];
-
     for await (const chunk of response) {
       if (chunk.text) {
         fullText += chunk.text;
-        
-        // Accumulate unique grounding sources
-        const sources = chunk.candidates?.[0]?.groundingMetadata?.groundingChunks;
-        if (sources) {
-          sources.forEach(s => {
-            if (s.web && !allSources.some(existing => existing.web?.uri === s.web.uri)) {
-              allSources.push(s);
-            }
-          });
-        }
-        
-        onChunk(fullText, allSources.length > 0 ? allSources : undefined);
+        onChunk(fullText);
       }
     }
     return fullText;
