@@ -34,30 +34,46 @@ export const generateReflection = async (songTitle: string, lyrics: string[]) =>
 };
 
 /**
- * Explains a Bible verse using Gemini 3 Flash with Google Search.
+ * Explains a Bible verse using Gemini 3 Flash with mandatory Google Search grounding.
+ * Optimized for live environments to prevent refusals or empty responses.
  */
 export const explainVerseStream = async (verseReference: string, onChunk: (text: string, sources?: any[]) => void) => {
   try {
+    // Re-initializing to ensure fresh state for each live call
     const aiInstance = new GoogleGenAI({ apiKey: process.env.API_KEY });
     const modelName = 'gemini-3-flash-preview'; 
     
-    const prompt = `Search for: "${verseReference}". 
-    Explain it profoundly in Bengali with these sections:
-    [[VERSE]] (The Bengali text)
-    [[CONTEXT]] (Historical background from search)
-    [[MEANING]] (Spiritual insight)
-    [[APPLICATION]] (How to apply to life)
-    [[PRAYER]] (Short prayer)
+    // The prompt is engineered to demand a search-based scholarly response
+    const prompt = `ACT AS A BIBLE SCHOLAR. 
+    TASK: Research and explain the Bible verse: "${verseReference}" in Bengali.
+    MANDATORY: You MUST use Google Search to verify the exact Bengali text and historical context.
     
-    Be direct and accurate. Use Google Search.`;
+    RESPONSE STRUCTURE:
+    [[VERSE]]
+    (The full Bengali verse text)
+    
+    [[CONTEXT]]
+    (Historical and situational context from your search)
+    
+    [[MEANING]]
+    (Deep spiritual and theological meaning)
+    
+    [[APPLICATION]]
+    (How this applies to modern daily life)
+    
+    [[PRAYER]]
+    (A short prayer related to this verse)
+    
+    If the verse is not found, state that you are searching alternative translations.
+    Cite your sources at the end. Output only in Bengali.`;
     
     const response = await aiInstance.models.generateContentStream({
       model: modelName,
       contents: prompt,
       config: {
-        systemInstruction: "You are an elite Bible Scholar. You MUST use the googleSearch tool for every request to ensure the verse text and context are 100% accurate. Output Bengali only.",
+        systemInstruction: "You are a specialized Bible Study AI. Your primary goal is to provide accurate, scholarly, and spiritual explanations in Bengali. You HAVE PERMISSION to discuss religious texts for educational purposes. ALWAYS use the googleSearch tool for accuracy. Do not refuse requests for Bible verse explanations.",
         tools: [{ googleSearch: {} }],
-        temperature: 0, 
+        temperature: 0.1, // Low temperature for factual consistency
       }
     });
 
@@ -78,6 +94,11 @@ export const explainVerseStream = async (verseReference: string, onChunk: (text:
         onChunk(fullText, allSources.length > 0 ? allSources : undefined);
       }
     }
+    
+    if (!fullText) {
+      throw new Error("Empty response from AI");
+    }
+    
     return fullText;
   } catch (error) {
     console.error("Explanation Stream Error:", error);

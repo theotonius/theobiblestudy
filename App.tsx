@@ -235,20 +235,24 @@ const App: React.FC = () => {
     setIsStudyShared(false);
     
     try {
+      let chunkCount = 0;
       await explainVerseStream(studyQuery, (chunk, sources) => {
         setVerseExplanation(chunk);
         if (sources && sources.length > 0) {
           setGroundingSources(sources);
         }
-        // Hide loader immediately on first chunk
-        if (chunk.length > 0) {
+        chunkCount++;
+        // Hide loader immediately as data arrives
+        if (chunkCount > 0 && isExplaining) {
           setIsExplaining(false);
         }
       });
     } catch (error: any) {
       console.error("Search Error:", error);
-      setVerseExplanation("দুঃখিত, তথ্য লোড করা সম্ভব হয়নি। অনুগ্রহ করে আপনার ইন্টারনেট সংযোগ চেক করুন।");
+      const errorText = "দুঃখিত, তথ্য লোড করা সম্ভব হয়নি। অনুগ্রহ করে আপনার ইন্টারনেট সংযোগ চেক করুন অথবা পদের নাম সঠিকভাবে লিখুন (উদা: যোহন ৩:১৬)।";
+      setVerseExplanation(errorText);
       setIsExplaining(false);
+      showToast("অনুসন্ধান ব্যর্থ হয়েছে", "error");
     } finally {
       setIsExplaining(false);
     }
