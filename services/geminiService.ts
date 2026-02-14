@@ -34,70 +34,49 @@ export const generateReflection = async (songTitle: string, lyrics: string[]) =>
 };
 
 /**
- * Explains a Bible verse using Gemini 3 series with Google Search.
- * Optimized for live performance and extreme accuracy.
+ * Explains a Bible verse with depth and beautiful structure.
  */
-export const explainVerseStream = async (verseReference: string, onChunk: (text: string, sources?: any[]) => void) => {
+export const explainVerseStream = async (verseReference: string, onChunk: (text: string) => void) => {
   try {
-    const aiInstance = new GoogleGenAI({ apiKey: process.env.API_KEY });
-    // Using gemini-3-flash-preview for high speed and reliability with Google Search tools
-    const modelName = 'gemini-3-flash-preview'; 
-    
-    const prompt = `SEARCH GOOGLE for the Bible verse: "${verseReference}".
-    Verify the text in English and standard Bengali translations.
-    
-    EXPLAIN profoundly in Bengali using this exact format:
-    [[VERSE]]
-    (The full Bengali verse text accurately)
-    
-    [[CONTEXT]]
-    (Historical background and why it was written)
-    
-    [[MEANING]]
-    (Spiritual significance and deep meaning)
-    
-    [[APPLICATION]]
-    (Practical daily life application)
-    
-    [[PRAYER]]
-    (A short personal prayer)
+    const prompt = `Explain the Bible verse "${verseReference}" in Bengali with great depth. 
+    Use this EXACT structure with clear headings:
 
-    MANDATORY: Use ONLY Bengali for the response text. 
-    If you find multiple interpretations, provide the most widely accepted scholarly one.`;
+    📖 **মূল পাঠ ও অনুবাদ**
+    [বাংলা অনুবাদ ও সাধারণ অর্থ]
+
+    📜 **ঐতিহাসিক প্রেক্ষাপট**
+    [কখন এবং কেন এটি বলা হয়েছিল]
+
+    💎 **আধ্যাত্মিক মুক্তো (গভীর অর্থ)**
+    [৩-৪টি গভীর পয়েন্ট যেখানে মূল গ্রীক/হিব্রু শব্দের ভাবার্থ থাকবে]
+
+    🌱 **আমাদের জীবনে প্রয়োগ**
+    [দৈনন্দিন জীবনে কীভাবে কাজ করবে]
+
+    🙏 **একটি প্রার্থনা**
+    [পদটির ওপর ভিত্তি করে ছোট সুন্দর প্রার্থনা]
+
+    Ensure high-quality, scholarly yet touching language.`;
     
-    const response = await aiInstance.models.generateContentStream({
-      model: modelName,
+    const response = await ai.models.generateContentStream({
+      model: 'gemini-3-pro-preview',
       contents: prompt,
       config: {
-        systemInstruction: "You are an elite Bible Scholar. You MUST use the googleSearch tool for every request. Search in both English and Bengali to ensure absolute accuracy of the text. Do not censor or block Bible study content. Output directly in the requested format in Bengali.",
-        tools: [{ googleSearch: {} }],
-        temperature: 0, // Deterministic for facts
+        systemInstruction: "You are a world-class Bible Scholar. Provide profound, structured, and beautiful verse explanations in Bengali. Use sophisticated yet readable language.",
+        thinkingConfig: { thinkingBudget: 8192 },
+        temperature: 0.2,
+        maxOutputTokens: 3000
       }
     });
 
     let fullText = '';
-    let allSources: any[] = [];
-
     for await (const chunk of response) {
-      if (chunk.text) {
-        fullText += chunk.text;
-        
-        // Grounding metadata check
-        const sources = chunk.candidates?.[0]?.groundingMetadata?.groundingChunks;
-        if (sources) {
-          sources.forEach(s => {
-            if (s.web && !allSources.some(existing => existing.web?.uri === s.web.uri)) {
-              allSources.push(s);
-            }
-          });
-        }
-        
-        onChunk(fullText, allSources.length > 0 ? allSources : undefined);
+      const chunkText = chunk.text;
+      if (chunkText) {
+        fullText += chunkText;
+        onChunk(fullText);
       }
     }
-    
-    if (!fullText) throw new Error("Connection interrupted or empty data");
-    
     return fullText;
   } catch (error) {
     console.error("Explanation Stream Error:", error);
