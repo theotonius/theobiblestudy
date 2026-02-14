@@ -11,30 +11,107 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,600;1,400&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <!-- Bengali Web Fonts CDN -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/maateen/bengali-web-fonts@master/font/SolaimanLipi/SolaimanLipi.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/maateen/bengali-web-fonts@master/font/Kalpurush/Kalpurush.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/maateen/bengali-web-fonts@master/font/SiyamRupali/SiyamRupali.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/maateen/bengali-web-fonts@master/font/Mukti/Mukti.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/maateen/bengali-web-fonts@master/font/Lohit/Lohit.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/maateen/bengali-web-fonts@master/font/BenSen/BenSen.css">
+
     <style>
       :root {
         --app-height: 100%;
+        --sb-track: transparent;
+        --sb-thumb: #e2e8f0;
+        --sb-thumb-hover: #6366f1;
       }
+      
+      .dark {
+        --sb-thumb: #334155;
+        --sb-thumb-hover: #818cf8;
+      }
+      
+      .sepia {
+        --sb-thumb: #dcd0b3;
+        --sb-thumb-hover: #8b6d4d;
+      }
+
       body {
-        font-family: 'Inter', sans-serif;
+        font-family: 'Inter', 'SolaimanLipi', 'SiyamRupali', 'Kalpurush', sans-serif;
         background-color: #fdfbf7;
         margin: 0;
         padding: 0;
         -webkit-tap-highlight-color: transparent;
+        /* Anti-breaking Fix for Bengali */
+        text-rendering: optimizeLegibility;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        font-variant-ligatures: common-ligatures;
+        font-feature-settings: "kern", "liga", "clig", "calt";
       }
+
+      /* Font Classes with Rendering Fixes */
+      .font-kalpurush { 
+        font-family: 'Kalpurush', Arial, sans-serif !important;
+        text-rendering: optimizeLegibility;
+        font-feature-settings: "kern", "liga", "clig", "calt";
+      }
+      .font-solaiman { 
+        font-family: 'SolaimanLipi', Arial, sans-serif !important;
+        text-rendering: optimizeLegibility;
+        font-feature-settings: "kern", "liga", "clig", "calt";
+      }
+      .font-siyam { 
+        font-family: 'SiyamRupali', Arial, sans-serif !important;
+        text-rendering: optimizeLegibility;
+        font-feature-settings: "kern", "liga", "clig", "calt";
+      }
+      .font-mukti { 
+        font-family: 'Mukti', Arial, sans-serif !important;
+        text-rendering: optimizeLegibility;
+      }
+      .font-lohit { 
+        font-family: 'Lohit', Arial, sans-serif !important;
+        text-rendering: optimizeLegibility;
+      }
+      .font-bensen { 
+        font-family: 'BenSen', cursive !important;
+        text-rendering: optimizeLegibility;
+      }
+      
+      /* Global Custom Scrollbar */
+      * {
+        scrollbar-width: thin;
+        scrollbar-color: var(--sb-thumb) var(--sb-track);
+      }
+
+      ::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+      }
+      
+      ::-webkit-scrollbar-track {
+        background: var(--sb-track);
+      }
+      
+      ::-webkit-scrollbar-thumb {
+        background: var(--sb-thumb);
+        border-radius: 20px;
+        border: 1px solid transparent;
+        background-clip: content-box;
+        transition: background 0.3s ease;
+      }
+      
+      ::-webkit-scrollbar-thumb:hover {
+        background: var(--sb-thumb-hover);
+      }
+
       .font-serif {
         font-family: 'Crimson Pro', serif;
       }
-      ::-webkit-scrollbar {
-        width: 8px;
-      }
-      ::-webkit-scrollbar-track {
-        background: transparent;
-      }
-      ::-webkit-scrollbar-thumb {
-        background: #e2e8f0;
-        border-radius: 10px;
-      }
+      
       .page-transition {
         animation: slideUp 0.4s cubic-bezier(0, 0, 0.2, 1);
       }
@@ -61,9 +138,10 @@
 
       .animate-fadeIn { animation: fadeIn 0.8s ease-out forwards; }
       .animate-slideUp { animation: slideUp 0.8s ease-out forwards; }
-      .animate-scaleUp { animation: scaleUp 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+      .animate-scaleUp { animation: scaleUp 0.8 cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
       .animate-loading-bar { animation: loading-bar 3.8s linear forwards; }
 
+      /* Atmospheric Animations */
       @keyframes float {
         0% { transform: translate(0, 0); opacity: 0.3; }
         50% { transform: translate(30px, -30px); opacity: 0.6; }
@@ -71,6 +149,31 @@
       }
       .animate-celestial {
         animation: float 15s ease-in-out infinite;
+      }
+
+      @keyframes twinkle {
+        0%, 100% { opacity: 0.2; transform: scale(1); }
+        50% { opacity: 0.8; transform: scale(1.2); }
+      }
+      .animate-twinkle {
+        animation: twinkle 3s ease-in-out infinite;
+      }
+
+      @keyframes parchment {
+        0% { transform: scale(1) translate(0, 0); }
+        50% { transform: scale(1.05) translate(2px, 2px); }
+        100% { transform: scale(1) translate(0, 0); }
+      }
+      .animate-parchment {
+        animation: parchment 20s ease-in-out infinite;
+      }
+
+      @keyframes wave {
+        0% { transform: translateX(0); }
+        100% { transform: translateX(-50%); }
+      }
+      .animate-wave {
+        animation: wave 25s linear infinite;
       }
 
       @keyframes focus-glow {
