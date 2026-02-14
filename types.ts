@@ -14,6 +14,15 @@ export interface UserProfile {
   photo: string;
 }
 
+export interface Message {
+  id: string;
+  text: string;
+  senderId: string;
+  senderName: string;
+  senderPhoto: string;
+  timestamp: number;
+}
+
 export interface SavedStudy {
   id: string;
   reference: string;
@@ -37,6 +46,7 @@ export enum AppTab {
   Reader = 'reader',
   Reflections = 'reflections',
   Study = 'study',
+  Chat = 'chat',
   Profile = 'profile',
   Developer = 'developer'
 }

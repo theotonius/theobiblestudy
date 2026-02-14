@@ -62,37 +62,17 @@
       .animate-fadeIn { animation: fadeIn 0.8s ease-out forwards; }
       .animate-slideUp { animation: slideUp 0.8s ease-out forwards; }
       .animate-scaleUp { animation: scaleUp 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
-      /* Extended loading bar to 3.8s to finish just before the 4s splash screen ends */
       .animate-loading-bar { animation: loading-bar 3.8s linear forwards; }
 
-      /* Background Animations */
       @keyframes float {
         0% { transform: translate(0, 0); opacity: 0.3; }
         50% { transform: translate(30px, -30px); opacity: 0.6; }
         100% { transform: translate(0, 0); opacity: 0.3; }
       }
-      @keyframes rays {
-        0% { transform: rotate(0deg) scale(1); opacity: 0.1; }
-        50% { transform: rotate(5deg) scale(1.1); opacity: 0.2; }
-        100% { transform: rotate(0deg) scale(1); opacity: 0.1; }
-      }
-      @keyframes wave {
-        0% { transform: scale(1); opacity: 0.05; }
-        50% { transform: scale(1.1); opacity: 0.1; }
-        100% { transform: scale(1); opacity: 0.05; }
-      }
-
       .animate-celestial {
         animation: float 15s ease-in-out infinite;
       }
-      .animate-rays {
-        animation: rays 20s ease-in-out infinite;
-      }
-      .animate-wave {
-        animation: wave 12s ease-in-out infinite;
-      }
 
-      /* Focus Glow Animation for Search */
       @keyframes focus-glow {
         0%, 100% { box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1); border-color: rgba(99, 102, 241, 0.3); }
         50% { box-shadow: 0 0 0 12px rgba(99, 102, 241, 0.15); border-color: rgba(99, 102, 241, 0.6); }
@@ -102,24 +82,24 @@
         outline: none;
       }
 
-      /* PWA Display tweaks */
       @media all and (display-mode: standalone) {
-        body {
-          user-select: none;
-        }
+        body { user-select: none; }
       }
     </style>
     <script type="importmap">
-    {
-      "imports": {
-        "@google/genai": "https://esm.sh/@google/genai@^1.40.0",
-        "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
-        "react/": "https://esm.sh/react@^19.2.4/",
-        "react": "https://esm.sh/react@^19.2.4",
-        "lucide-react": "https://esm.sh/lucide-react@^0.563.0"
-      }
-    }
-    </script>
+{
+  "imports": {
+    "@google/genai": "https://esm.sh/@google/genai@^1.40.0",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
+    "react/": "https://esm.sh/react@^19.2.4/",
+    "react": "https://esm.sh/react@^19.2.4",
+    "lucide-react": "https://esm.sh/lucide-react@^0.563.0",
+    "firebase/app": "https://esm.sh/firebase@10.8.0/app",
+    "firebase/database": "https://esm.sh/firebase@10.8.0/database",
+    "firebase/": "https://esm.sh/firebase@^12.9.0/"
+  }
+}
+</script>
   </head>
   <body>
     <div id="root"></div>

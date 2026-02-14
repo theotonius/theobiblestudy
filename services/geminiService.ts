@@ -1,10 +1,8 @@
 
 import { GoogleGenAI, Modality, Type } from "@google/genai";
 
-// Initialize AI with API Key from environment variables as per guidelines
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
-// Samayik server somossa erate Retry Logic
 async function withRetry<T>(fn: () => Promise<T>, retries = 2, delay = 1000): Promise<T> {
   try {
     return await fn();
@@ -18,7 +16,6 @@ async function withRetry<T>(fn: () => Promise<T>, retries = 2, delay = 1000): Pr
 export const generateReflection = async (songTitle: string, lyrics: string[]) => {
   return withRetry(async () => {
     const prompt = `Based on the lyrics of the Bible song "${songTitle}", provide a short spiritual reflection and a related Bible verse. Lyrics: ${lyrics.join(' ')}`;
-    
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
       contents: prompt,
@@ -35,14 +32,20 @@ export const generateReflection = async (songTitle: string, lyrics: string[]) =>
 
 export const explainVerseStream = async (verseReference: string, onChunk: (text: string) => void) => {
   try {
-    const prompt = `Explain the Bible verse "${verseReference}" in Bengali. Provide: 1. The verse. 2. Context. 3. Meaning. 4. Life Application. Be concise and spiritual.`;
+    // Optimized for speed and clear structure
+    const prompt = `Explain "${verseReference}" in Bengali. Use exactly this format:
+    📌 **পদটি:** [Verse Text]
+    📜 **প্রেক্ষাপট:** [Short Context]
+    💎 **গভীর অর্থ:** [Deep Meaning in 3-4 bullet points]
+    🌱 **জীবনের প্রয়োগ:** [Practical Application]`;
     
     const response = await ai.models.generateContentStream({
       model: 'gemini-3-flash-preview',
       contents: prompt,
       config: {
-        systemInstruction: "You are an expert biblical scholar. Explain Bible verses clearly and deeply in Bengali. Use streaming to provide immediate output.",
-        thinkingConfig: { thinkingBudget: 0 } // Disable deep thinking for maximum speed
+        systemInstruction: "You are an expert biblical scholar. Provide structured, deep, and rapid explanations in Bengali. No conversational filler.",
+        thinkingConfig: { thinkingBudget: 0 },
+        temperature: 0.2 // Lower temperature for more consistent, faster results
       }
     });
 
@@ -65,7 +68,7 @@ export const fetchSongFromAI = async (query: string) => {
   return withRetry(async () => {
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
-      contents: `Find the lyrics for the Bible song or hymn: "${query}". Return the title, primary Bible reference, category, and lyrics as a list of lines. Return as JSON.`,
+      contents: `Find the lyrics for the Bible song or hymn: "${query}". Return as JSON with title, reference, category (Worship/Praise/Hymn/Kids), and lyrics array.`,
       config: {
         responseMimeType: "application/json",
         responseSchema: {
@@ -102,10 +105,8 @@ export const speakLyrics = async (text: string) => {
         },
       },
     });
-
     const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
-    if (!base64Audio) throw new Error("No audio data returned from API");
-    
+    if (!base64Audio) throw new Error("No audio data returned");
     return base64Audio;
   }).catch(error => {
     console.error("TTS Error:", error);
@@ -132,7 +133,6 @@ export const decodeAudioData = async (
   const dataInt16 = new Int16Array(data.buffer);
   const frameCount = dataInt16.length / numChannels;
   const buffer = ctx.createBuffer(numChannels, frameCount, sampleRate);
-
   for (let channel = 0; channel < numChannels; channel++) {
     const channelData = buffer.getChannelData(channel);
     for (let i = 0; i < frameCount; i++) {
