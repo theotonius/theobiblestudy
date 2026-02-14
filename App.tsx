@@ -183,8 +183,8 @@ const App: React.FC = () => {
     showToast(isFav ? "লাইব্রেরি থেকে সরানো হয়েছে।" : "লাইব্রেরিতে যুক্ত করা হয়েছে।");
   };
 
-  const handleSendMessage = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSendMessage = async (e?: React.FormEvent | React.KeyboardEvent) => {
+    if (e) e.preventDefault();
     if (!user) {
       showToast("চ্যাট করতে লগইন করুন।", "error");
       setActiveTab(AppTab.Profile);
@@ -201,6 +201,8 @@ const App: React.FC = () => {
         timestamp: Date.now()
       });
       setNewMessage('');
+      // Scroll to bottom after sending
+      setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
     } catch (err) {
       showToast("মেসেজ পাঠানো সম্ভব হয়নি।", "error");
     }
@@ -459,7 +461,18 @@ const App: React.FC = () => {
                <div className={`p-6 border-t rounded-b-[3rem] ${cardBgClasses}`}>
                   {user ? (
                     <form onSubmit={handleSendMessage} className="relative flex items-center gap-3">
-                       <input type="text" value={newMessage} onChange={(e) => setNewMessage(e.target.value)} placeholder="আপনার অনুভূতি শেয়ার করুন..." className={`flex-1 py-4 px-6 rounded-2xl border transition-all text-sm font-medium outline-none ${theme === Theme.Dark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200 focus:border-indigo-500'}`} />
+                       <input 
+                        type="text" 
+                        value={newMessage} 
+                        onChange={(e) => setNewMessage(e.target.value)} 
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && !e.shiftKey) {
+                            handleSendMessage(e);
+                          }
+                        }}
+                        placeholder="আপনার অনুভূতি শেয়ার করুন..." 
+                        className={`flex-1 py-4 px-6 rounded-2xl border transition-all text-sm font-medium outline-none ${theme === Theme.Dark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200 focus:border-indigo-500'}`} 
+                       />
                        <button type="submit" className="p-4 bg-indigo-600 text-white rounded-2xl shadow-xl hover:scale-105 active:scale-95 transition-all"><Send className="w-5 h-5" /></button>
                     </form>
                   ) : (

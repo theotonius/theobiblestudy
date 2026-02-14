@@ -10,13 +10,13 @@ import { Message } from "../types";
  * ৩. apiKey এবং databaseURL সঠিক হলে অ্যাপটি স্বয়ংক্রিয়ভাবে Firebase-এ কানেক্ট হবে।
  */
 const firebaseConfig = {
-  apiKey: "AIzaSyCe5s56r7d4txfeXXMNq6notCs-XDk0JEA", // এখানে আপনার API Key দিন
-  authDomain: "theobiblestudy-bac71.firebaseapp.com",
-  databaseURL: "https://theobiblestudy-bac71-default-rtdb.firebaseio.com", // এখানে আপনার DB URL দিন
-  projectId: "theobiblestudy-bac71",
-  storageBucket: "theobiblestudy-bac71.firebasestorage.app",
-  messagingSenderId: "94907339663",
-  appId: "1:94907339663:web:3875ae4d395e757014b1fa"
+  apiKey: "YOUR_FIREBASE_API_KEY", // এখানে আপনার API Key দিন
+  authDomain: "your-app-id.firebaseapp.com",
+  databaseURL: "https://your-app-id-default-rtdb.firebaseio.com", // এখানে আপনার DB URL দিন
+  projectId: "your-app-id",
+  storageBucket: "your-app-id.appspot.com",
+  messagingSenderId: "123456789",
+  appId: "1:123456789:web:abcdef123456"
 };
 
 let app: FirebaseApp | null = null;
