@@ -34,47 +34,46 @@ export const generateReflection = async (songTitle: string, lyrics: string[]) =>
 };
 
 /**
- * Explains a Bible verse using Gemini 3 Flash with high-speed Google Search.
+ * Explains a Bible verse using Gemini 3 Flash.
+ * Removed thinkingConfig to ensure maximum speed and compatibility.
  */
-export const explainVerseStream = async (verseReference: string, onChunk: (text: string, groundingSources?: any[]) => void) => {
+export const explainVerseStream = async (verseReference: string, onChunk: (text: string) => void) => {
   try {
-    const aiInstance = new GoogleGenAI({ apiKey: process.env.API_KEY });
     const modelName = 'gemini-3-flash-preview'; 
+    const prompt = `Explain "${verseReference}" in Bengali profoundly.
+    Follow this structure strictly:
     
-    const prompt = `Search and explain: "${verseReference}". 
-    Format:
-    [[VERSE]] (Verse text)
-    [[CONTEXT]] (Search-based background)
-    [[MEANING]] (Spiritual depth)
-    [[APPLICATION]] (Life advice)
-    [[PRAYER]] (Short prayer)
-    In Bengali. Start now.`;
+    [[VERSE]]
+    (Full text of the verse)
     
-    const response = await aiInstance.models.generateContentStream({
+    [[CONTEXT]]
+    (Historical context)
+    
+    [[MEANING]]
+    (Deep spiritual meaning)
+    
+    [[APPLICATION]]
+    (Practical application)
+    
+    [[PRAYER]]
+    (A short prayer)
+
+    Do not include any intro or conversational text. Start directly with [[VERSE]].`;
+    
+    const response = await ai.models.generateContentStream({
       model: modelName,
       contents: prompt,
       config: {
-        systemInstruction: "You are an elite Bible Scholar. Use googleSearch tool IMMEDIATELY to verify and explain. Output Bengali only. No filler text.",
-        tools: [{ googleSearch: {} }],
-        temperature: 0, // Set to 0 for maximum speed and directness
+        systemInstruction: "You are an elite Bible Scholar. Output deep Bengali explanations. Use double brackets for markers like [[VERSE]]. Start immediately.",
+        temperature: 0.2, 
       }
     });
 
     let fullText = '';
-    let allSources: any[] = [];
-
     for await (const chunk of response) {
       if (chunk.text) {
         fullText += chunk.text;
-        const sources = chunk.candidates?.[0]?.groundingMetadata?.groundingChunks;
-        if (sources) {
-          sources.forEach(s => {
-            if (s.web && !allSources.some(existing => existing.web?.uri === s.web.uri)) {
-              allSources.push(s);
-            }
-          });
-        }
-        onChunk(fullText, allSources.length > 0 ? allSources : undefined);
+        onChunk(fullText);
       }
     }
     return fullText;
