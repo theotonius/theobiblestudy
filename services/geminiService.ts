@@ -34,12 +34,13 @@ export const generateReflection = async (songTitle: string, lyrics: string[]) =>
 };
 
 /**
- * Explains a Bible verse using Gemini 3 Flash with Google Search capability.
+ * Explains a Bible verse using Gemini 3 Flash.
+ * Removed thinkingConfig to ensure maximum speed and compatibility.
  */
-export const explainVerseStream = async (verseReference: string, onChunk: (text: string, groundingSources?: any[]) => void) => {
+export const explainVerseStream = async (verseReference: string, onChunk: (text: string) => void) => {
   try {
     const modelName = 'gemini-3-flash-preview'; 
-    const prompt = `Explain "${verseReference}" in Bengali profoundly. Search for reliable theological sources if needed.
+    const prompt = `Explain "${verseReference}" in Bengali profoundly.
     Follow this structure strictly:
     
     [[VERSE]]
@@ -57,14 +58,13 @@ export const explainVerseStream = async (verseReference: string, onChunk: (text:
     [[PRAYER]]
     (A short prayer)
 
-    Do not include any intro. Start directly with [[VERSE]].`;
+    Do not include any intro or conversational text. Start directly with [[VERSE]].`;
     
     const response = await ai.models.generateContentStream({
       model: modelName,
       contents: prompt,
       config: {
-        systemInstruction: "You are an elite Bible Scholar. Output deep Bengali explanations. Use double brackets for markers like [[VERSE]]. Use Google Search to find accurate context if needed.",
-        tools: [{ googleSearch: {} }],
+        systemInstruction: "You are an elite Bible Scholar. Output deep Bengali explanations. Use double brackets for markers like [[VERSE]]. Start immediately.",
         temperature: 0.2, 
       }
     });
@@ -73,8 +73,7 @@ export const explainVerseStream = async (verseReference: string, onChunk: (text:
     for await (const chunk of response) {
       if (chunk.text) {
         fullText += chunk.text;
-        const sources = chunk.candidates?.[0]?.groundingMetadata?.groundingChunks;
-        onChunk(fullText, sources);
+        onChunk(fullText);
       }
     }
     return fullText;
