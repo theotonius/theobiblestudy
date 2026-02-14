@@ -35,7 +35,7 @@ export const generateReflection = async (songTitle: string, lyrics: string[]) =>
 
 /**
  * Explains a Bible verse using Gemini 3 Pro.
- * Optimized for speed and depth by fixing the token budget conflict.
+ * Fixed "Budget 0 is invalid" by setting a minimal valid budget for thinking.
  */
 export const explainVerseStream = async (verseReference: string, onChunk: (text: string) => void) => {
   try {
@@ -63,10 +63,10 @@ export const explainVerseStream = async (verseReference: string, onChunk: (text:
       model: 'gemini-3-pro-preview',
       contents: prompt,
       config: {
-        systemInstruction: "You are a world-class Bible Scholar. Provide profound, structured Bengali explanations. Start streaming results immediately. Do not use intro text.",
-        // Setting a balanced thinking budget without maxOutputTokens to avoid the previous error
-        thinkingConfig: { thinkingBudget: 2048 },
-        temperature: 0.2
+        systemInstruction: "You are an elite Bible Scholar. Provide profound Bengali explanations. Use minimal thinking for faster response. Start streaming results immediately without conversational intros.",
+        // Gemini 3 Pro requires a budget > 0. 1024 is small for speed but valid for the model.
+        thinkingConfig: { thinkingBudget: 1024 },
+        temperature: 0.1, 
       }
     });
 
