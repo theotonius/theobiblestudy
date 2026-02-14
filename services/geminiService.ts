@@ -35,9 +35,9 @@ export const generateReflection = async (songTitle: string, lyrics: string[]) =>
 
 /**
  * Explains a Bible verse using Gemini 3 Flash.
- * Removed thinkingConfig to ensure maximum speed and compatibility.
+ * Updated to support grounding sources in the stream callback to satisfy UI requirements.
  */
-export const explainVerseStream = async (verseReference: string, onChunk: (text: string) => void) => {
+export const explainVerseStream = async (verseReference: string, onChunk: (text: string, sources?: any[]) => void) => {
   try {
     const modelName = 'gemini-3-flash-preview'; 
     const prompt = `Explain "${verseReference}" in Bengali profoundly.
@@ -66,6 +66,8 @@ export const explainVerseStream = async (verseReference: string, onChunk: (text:
       config: {
         systemInstruction: "You are an elite Bible Scholar. Output deep Bengali explanations. Use double brackets for markers like [[VERSE]]. Start immediately.",
         temperature: 0.2, 
+        // Adding Google Search tool to provide grounding sources for the UI as per guidelines
+        tools: [{ googleSearch: {} }]
       }
     });
 
@@ -73,7 +75,9 @@ export const explainVerseStream = async (verseReference: string, onChunk: (text:
     for await (const chunk of response) {
       if (chunk.text) {
         fullText += chunk.text;
-        onChunk(fullText);
+        // Extract grounding chunks from candidates if available for the callback
+        const sources = chunk.candidates?.[0]?.groundingMetadata?.groundingChunks;
+        onChunk(fullText, sources);
       }
     }
     return fullText;
