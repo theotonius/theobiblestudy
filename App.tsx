@@ -11,7 +11,7 @@ import {
   Code2, Github, Globe, Linkedin, Mail, Smartphone, Award, Laptop, Wand2, AlertCircle,
   LogIn, Chrome, Settings, UserCircle, Cpu, Layers, Zap, PhoneCall, Camera,
   MessageSquare, Send, Users, Database, History, Filter, Calendar, Maximize2, Eraser,
-  Cloud, CloudLightning, Wifi, WifiOff, Type as FontIcon, Quote, ScrollText, Gem, Sprout, HandHelping
+  Cloud, CloudLightning, Wifi, WifiOff, Type as FontIcon, Quote, ScrollText, Gem, Sprout, HandHelping, ExternalLink
 } from 'lucide-react';
 import { fetchSongFromAI, explainVerseStream } from './services/geminiService';
 import { subscribeToMessages, sendChatMessage, isFirebaseConnected } from './services/firebaseService';
@@ -141,6 +141,7 @@ const App: React.FC = () => {
 
   const [isExplaining, setIsExplaining] = useState(false);
   const [verseExplanation, setVerseExplanation] = useState<string | null>(null);
+  const [groundingSources, setGroundingSources] = useState<any[]>([]);
   const [isStudySaved, setIsStudySaved] = useState(false);
   const [isStudyShared, setIsStudyShared] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
@@ -224,17 +225,20 @@ const App: React.FC = () => {
     if (!studyQuery.trim()) return;
     setIsExplaining(true);
     setVerseExplanation(""); 
+    setGroundingSources([]);
     setIsStudySaved(false);
     setIsStudyShared(false);
     try {
-      await explainVerseStream(studyQuery, (chunk) => {
+      await explainVerseStream(studyQuery, (chunk, sources) => {
         setVerseExplanation(chunk);
+        if (sources && sources.length > 0) {
+          setGroundingSources(sources);
+        }
         // Initially set isExplaining to false once we get the first chunk
-        // but keep the loading state inside the UI if needed
         setIsExplaining(false);
       });
     } catch (error) {
-      setVerseExplanation("দুঃখিত, ব্যাখ্যা লোড করা সম্ভব হয়নি।");
+      setVerseExplanation("দুঃখিত, ব্যাখ্যা লোড করা সম্ভব হয়নি। অনুগ্রহ করে ইন্টারনেট কানেকশন চেক করুন।");
       setIsExplaining(false);
     }
   };
@@ -332,7 +336,6 @@ const App: React.FC = () => {
 
   /**
    * Enhanced rendering for structured verse explanations.
-   * Uses case-insensitive regex for more robust marker finding.
    */
   const renderFormattedExplanation = (text: string) => {
     if (!text) return null;
@@ -345,11 +348,10 @@ const App: React.FC = () => {
       { key: '[[PRAYER]]', label: 'একটি প্রার্থনা', icon: <HandHelping className="w-5 h-5" />, color: 'purple' },
     ];
 
-    // Find occurrences of any markers (case-insensitive)
-    const normalizedText = text.replace(/\[\[/g, ' [[').replace(/\]\]/g, ']] ');
+    const upperText = text.toUpperCase();
     
     // If no markers found yet, show raw text in a nice container (for initial streaming)
-    if (!sections.some(s => text.toUpperCase().includes(s.key.toUpperCase()))) {
+    if (!sections.some(s => upperText.includes(s.key))) {
       return (
         <div className={`p-8 rounded-[2.5rem] border shadow-sm ${cardBgClasses} whitespace-pre-wrap text-xl leading-relaxed text-left animate-fadeIn`}>
           {text}
@@ -360,18 +362,15 @@ const App: React.FC = () => {
     return (
       <div className="space-y-8 text-left animate-fadeIn">
         {sections.map((section, idx) => {
-          const upperText = text.toUpperCase();
-          const markerUpper = section.key.toUpperCase();
-          const startIndex = upperText.indexOf(markerUpper);
+          const startIndex = upperText.indexOf(section.key);
           
           if (startIndex === -1) return null;
           
           let content = '';
-          // Find the next available section marker to know where this one ends
           let nextMarkerIndex = -1;
           sections.forEach((s, i) => {
             if (i > idx) {
-              const pos = upperText.indexOf(s.key.toUpperCase());
+              const pos = upperText.indexOf(s.key);
               if (pos !== -1 && (nextMarkerIndex === -1 || pos < nextMarkerIndex)) {
                 nextMarkerIndex = pos;
               }
@@ -403,6 +402,26 @@ const App: React.FC = () => {
             </div>
           );
         })}
+
+        {/* Display Grounding Sources */}
+        {groundingSources.length > 0 && (
+          <div className={`p-8 rounded-[2.5rem] border shadow-sm ${cardBgClasses} space-y-4`}>
+             <div className="flex items-center gap-3 opacity-50">
+                <Globe className="w-5 h-5" />
+                <h4 className="text-xs font-black uppercase tracking-widest">তথ্যসূত্র ও সোর্স</h4>
+             </div>
+             <div className="flex flex-wrap gap-2">
+                {groundingSources.map((src, i) => (
+                  src.web && (
+                    <a key={i} href={src.web.uri} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-4 py-2 bg-indigo-600/10 text-indigo-600 rounded-xl text-[10px] font-black hover:bg-indigo-600 hover:text-white transition-all">
+                       <ExternalLink className="w-3 h-3" />
+                       {src.web.title || 'Source'}
+                    </a>
+                  )
+                ))}
+             </div>
+          </div>
+        )}
       </div>
     );
   };
@@ -570,7 +589,7 @@ const App: React.FC = () => {
                       {isExplaining && !verseExplanation ? (
                          <div className={`p-16 rounded-[3.5rem] border shadow-2xl ${cardBgClasses} animate-pulse flex flex-col items-center gap-6`}>
                             <Loader2 className="w-12 h-12 animate-spin text-indigo-600" />
-                            <p className="font-black text-xs uppercase tracking-[0.3em] opacity-40">Gemini is searching scriptures...</p>
+                            <p className="font-black text-xs uppercase tracking-[0.3em] opacity-40 text-indigo-600/60">ব্যাখ্যা তৈরি হচ্ছে অনুগ্রহ করে অপেক্ষা করুন</p>
                          </div>
                       ) : (
                         <>
@@ -616,7 +635,7 @@ const App: React.FC = () => {
                                  <button 
                                    key={font.name} 
                                    onClick={() => setActiveFont(font.class)}
-                                   className={`p-4 rounded-2xl border transition-all text-sm font-bold flex flex-start items-start gap-1 group ${activeFont === font.class ? 'bg-indigo-600 border-indigo-600 text-white shadow-xl scale-105 z-10' : cardBgClasses + ' hover:border-indigo-300'}`}
+                                   className={`p-4 rounded-2xl border transition-all text-sm font-bold flex flex-col items-start gap-1 group ${activeFont === font.class ? 'bg-indigo-600 border-indigo-600 text-white shadow-xl scale-105 z-10' : cardBgClasses + ' hover:border-indigo-300'}`}
                                  >
                                    <span className="text-[10px] opacity-60 uppercase tracking-widest font-black">Font</span>
                                    <span className={`${font.class} text-base`}>{font.name}</span>

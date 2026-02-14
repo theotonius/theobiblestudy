@@ -34,15 +34,12 @@ export const generateReflection = async (songTitle: string, lyrics: string[]) =>
 };
 
 /**
- * Explains a Bible verse using Gemini 3 Pro or Flash.
- * Optimized markers to be simpler and ensure model starts immediately.
+ * Explains a Bible verse using Gemini 3 Flash with Google Search capability.
  */
-export const explainVerseStream = async (verseReference: string, onChunk: (text: string) => void) => {
+export const explainVerseStream = async (verseReference: string, onChunk: (text: string, groundingSources?: any[]) => void) => {
   try {
-    // Note: Using gemini-3-flash-preview for faster response, 
-    // or gemini-3-pro-preview for deeper thoughts (requires budget).
-    const modelName = 'gemini-3-pro-preview'; 
-    const prompt = `Explain "${verseReference}" in Bengali profoundly.
+    const modelName = 'gemini-3-flash-preview'; 
+    const prompt = `Explain "${verseReference}" in Bengali profoundly. Use Google Search to find accurate historical context and theological insights.
     Follow this structure strictly:
     
     [[VERSE]]
@@ -60,15 +57,15 @@ export const explainVerseStream = async (verseReference: string, onChunk: (text:
     [[PRAYER]]
     (A short prayer)
 
-    Do not include any conversational preamble or markdown headers like # or ##. Just the markers and content.`;
+    Do not include any intro. Start directly with [[VERSE]].`;
     
     const response = await ai.models.generateContentStream({
       model: modelName,
       contents: prompt,
       config: {
-        systemInstruction: "You are an elite Bible Scholar. Output depth-filled Bengali explanations. Start immediately with [[VERSE]]. Use exactly the provided markers in double brackets.",
-        thinkingConfig: { thinkingBudget: 4096 }, // Increased for Pro model stability
-        temperature: 0.2, 
+        systemInstruction: "You are an elite Bible Scholar. Output deep Bengali explanations. Use double brackets for markers like [[VERSE]]. Use Google Search tool to ensure accuracy of quotes and history.",
+        tools: [{ googleSearch: {} }],
+        temperature: 0.1, 
       }
     });
 
@@ -76,7 +73,9 @@ export const explainVerseStream = async (verseReference: string, onChunk: (text:
     for await (const chunk of response) {
       if (chunk.text) {
         fullText += chunk.text;
-        onChunk(fullText);
+        // Extract grounding chunks if available in this chunk
+        const sources = chunk.candidates?.[0]?.groundingMetadata?.groundingChunks;
+        onChunk(fullText, sources);
       }
     }
     return fullText;
