@@ -34,14 +34,11 @@ export const generateReflection = async (songTitle: string, lyrics: string[]) =>
 };
 
 /**
- * Explains a Bible verse using Gemini 3 Pro or Flash.
- * Optimized markers to be simpler and ensure model starts immediately.
+ * Explains a Bible verse using Gemini 3 Flash for high speed.
  */
 export const explainVerseStream = async (verseReference: string, onChunk: (text: string) => void) => {
   try {
-    // Note: Using gemini-3-flash-preview for faster response, 
-    // or gemini-3-pro-preview for deeper thoughts (requires budget).
-    const modelName = 'gemini-3-pro-preview'; 
+    const modelName = 'gemini-3-flash-preview'; 
     const prompt = `Explain "${verseReference}" in Bengali profoundly.
     Follow this structure strictly:
     
@@ -60,15 +57,15 @@ export const explainVerseStream = async (verseReference: string, onChunk: (text:
     [[PRAYER]]
     (A short prayer)
 
-    Do not include any conversational preamble or markdown headers like # or ##. Just the markers and content.`;
+    Do not include any conversational preamble. Just the markers and content. Start immediately with [[VERSE]].`;
     
     const response = await ai.models.generateContentStream({
       model: modelName,
       contents: prompt,
       config: {
-        systemInstruction: "You are an elite Bible Scholar. Output depth-filled Bengali explanations. Start immediately with [[VERSE]]. Use exactly the provided markers in double brackets.",
-        thinkingConfig: { thinkingBudget: 4096 }, // Increased for Pro model stability
-        temperature: 0.2, 
+        systemInstruction: "You are an elite Bible Scholar. Output depth-filled Bengali explanations. Use exactly the provided markers in double brackets like [[VERSE]]. Be fast and direct.",
+        thinkingConfig: { thinkingBudget: 1024 }, // Minimal thinking for faster startup on Flash
+        temperature: 0.1, 
       }
     });
 
