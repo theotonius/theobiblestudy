@@ -34,38 +34,38 @@ export const generateReflection = async (songTitle: string, lyrics: string[]) =>
 };
 
 /**
- * Explains a Bible verse using Gemini 3 Pro with optimized thinking budget for speed.
+ * Explains a Bible verse with depth and beautiful structure.
  */
 export const explainVerseStream = async (verseReference: string, onChunk: (text: string) => void) => {
   try {
-    const prompt = `Explain the Bible verse "${verseReference}" in Bengali with professional depth and theological accuracy.
-    Use this EXACT structure:
+    const prompt = `Explain the Bible verse "${verseReference}" in Bengali with great depth. 
+    Use this EXACT structure with clear headings:
 
     📖 **মূল পাঠ ও অনুবাদ**
-    [সরাসরি অনুবাদ]
+    [বাংলা অনুবাদ ও সাধারণ অর্থ]
 
     📜 **ঐতিহাসিক প্রেক্ষাপট**
-    [সারগর্ভ প্রেক্ষাপট]
+    [কখন এবং কেন এটি বলা হয়েছিল]
 
     💎 **আধ্যাত্মিক মুক্তো (গভীর অর্থ)**
-    [৩টি গভীর ধর্মতাত্ত্বিক পয়েন্ট]
+    [৩-৪টি গভীর পয়েন্ট যেখানে মূল গ্রীক/হিব্রু শব্দের ভাবার্থ থাকবে]
 
     🌱 **আমাদের জীবনে প্রয়োগ**
-    [বাস্তব জীবনের গাইডলাইন]
+    [দৈনন্দিন জীবনে কীভাবে কাজ করবে]
 
     🙏 **একটি প্রার্থনা**
     [পদটির ওপর ভিত্তি করে ছোট সুন্দর প্রার্থনা]
 
-    Start responding immediately with the first heading. Do not use any introductory conversational filler.`;
+    Ensure high-quality, scholarly yet touching language.`;
     
     const response = await ai.models.generateContentStream({
-      model: 'gemini-3-pro-preview', // Upgraded back to Pro for depth
+      model: 'gemini-3-pro-preview',
       contents: prompt,
       config: {
-        systemInstruction: "You are an elite Bible Scholar. Provide profound, structured Bengali explanations. Be direct and concise. Start streaming immediately without preambles.",
-        thinkingConfig: { thinkingBudget: 4096 }, // Moderate budget to balance reasoning depth and response speed
-        temperature: 0.2, // Low for faster consistency
-        maxOutputTokens: 2500
+        systemInstruction: "You are a world-class Bible Scholar. Provide profound, structured, and beautiful verse explanations in Bengali. Use sophisticated yet readable language.",
+        thinkingConfig: { thinkingBudget: 8192 },
+        temperature: 0.2,
+        maxOutputTokens: 3000
       }
     });
 
