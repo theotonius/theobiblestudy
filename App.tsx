@@ -11,7 +11,7 @@ import {
   Code2, Github, Globe, Linkedin, Mail, Smartphone, Award, Laptop, Wand2, AlertCircle,
   LogIn, Chrome, Settings, UserCircle, Cpu, Layers, Zap, PhoneCall, Camera,
   MessageSquare, Send, Users, Database, History, Filter, Calendar, Maximize2, Eraser,
-  Cloud, CloudLightning, Wifi, WifiOff, Type as FontIcon, Quote, ScrollText, Gem, Sprout, HandHelping
+  Cloud, CloudLightning, Wifi, WifiOff, Type as FontIcon, Quote, ScrollText, Gem, Sprout, HandHelping, ExternalLink
 } from 'lucide-react';
 import { fetchSongFromAI, explainVerseStream } from './services/geminiService';
 import { subscribeToMessages, sendChatMessage, isFirebaseConnected } from './services/firebaseService';
@@ -141,6 +141,7 @@ const App: React.FC = () => {
 
   const [isExplaining, setIsExplaining] = useState(false);
   const [verseExplanation, setVerseExplanation] = useState<string | null>(null);
+  const [groundingSources, setGroundingSources] = useState<any[]>([]);
   const [isStudySaved, setIsStudySaved] = useState(false);
   const [isStudyShared, setIsStudyShared] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
@@ -224,19 +225,24 @@ const App: React.FC = () => {
     if (!studyQuery.trim()) return;
     setIsExplaining(true);
     setVerseExplanation(""); 
+    setGroundingSources([]);
     setIsStudySaved(false);
     setIsStudyShared(false);
+    
     try {
-      await explainVerseStream(studyQuery, (chunk) => {
+      await explainVerseStream(studyQuery, (chunk, sources) => {
         setVerseExplanation(chunk);
-        // We only set isExplaining to false if we have a substantial amount of text
-        // to prevent the loader from flashing too quickly
-        if (chunk.length > 50) {
-           setIsExplaining(false);
+        if (sources && sources.length > 0) {
+          setGroundingSources(sources);
+        }
+        // Switch off loader immediately on first chunk for "Instant" feel
+        if (chunk.length > 0) {
+          setIsExplaining(false);
         }
       });
-    } catch (error) {
-      setVerseExplanation("দুঃখিত, ব্যাখ্যা লোড করা সম্ভব হয়নি। অনুগ্রহ করে আপনার ইন্টারনেট কানেকশন চেক করুন।");
+    } catch (error: any) {
+      console.error("Search Error:", error);
+      setVerseExplanation("দুঃখিত, তথ্য লোড করা সম্ভব হয়নি।");
       setIsExplaining(false);
     } finally {
       setIsExplaining(false);
@@ -335,7 +341,7 @@ const App: React.FC = () => {
   const textMutedClasses = theme === Theme.Dark ? 'text-slate-300' : theme === Theme.Sepia ? 'text-[#8b6d4d]' : 'text-slate-500';
 
   /**
-   * Rendering for verse explanations with simplified parsing.
+   * Fast rendering for structured verse explanations.
    */
   const renderFormattedExplanation = (text: string) => {
     if (!text) return null;
@@ -349,11 +355,7 @@ const App: React.FC = () => {
     ];
 
     const upperText = text.toUpperCase();
-    
-    // Check if any markers are present
-    const hasAnyMarker = sections.some(s => upperText.includes(s.key));
-    
-    if (!hasAnyMarker) {
+    if (!sections.some(s => upperText.includes(s.key))) {
       return (
         <div className={`p-8 rounded-[2.5rem] border shadow-sm ${cardBgClasses} whitespace-pre-wrap text-xl leading-relaxed text-left animate-fadeIn`}>
           {text}
@@ -364,23 +366,25 @@ const App: React.FC = () => {
     return (
       <div className="space-y-8 text-left animate-fadeIn">
         {sections.map((section, idx) => {
-          const markerPos = upperText.indexOf(section.key);
-          if (markerPos === -1) return null;
+          const startIndex = upperText.indexOf(section.key);
+          if (startIndex === -1) return null;
           
-          let nextPos = -1;
-          // Find the start of the next section
+          let content = '';
+          let nextMarkerIndex = -1;
           sections.forEach((s, i) => {
             if (i > idx) {
-              const p = upperText.indexOf(s.key);
-              if (p !== -1 && (nextPos === -1 || p < nextPos)) {
-                nextPos = p;
+              const pos = upperText.indexOf(s.key);
+              if (pos !== -1 && (nextMarkerIndex === -1 || pos < nextMarkerIndex)) {
+                nextMarkerIndex = pos;
               }
             }
           });
 
-          const content = nextPos !== -1 
-            ? text.substring(markerPos + section.key.length, nextPos).trim()
-            : text.substring(markerPos + section.key.length).trim();
+          if (nextMarkerIndex !== -1) {
+            content = text.substring(startIndex + section.key.length, nextMarkerIndex).trim();
+          } else {
+            content = text.substring(startIndex + section.key.length).trim();
+          }
 
           if (!content) return null;
 
@@ -401,6 +405,25 @@ const App: React.FC = () => {
             </div>
           );
         })}
+
+        {groundingSources.length > 0 && (
+          <div className={`p-8 rounded-[2.5rem] border shadow-sm ${cardBgClasses} space-y-4 border-indigo-200 dark:border-indigo-900/40 bg-indigo-50/10`}>
+             <div className="flex items-center gap-3 opacity-60">
+                <Globe className="w-5 h-5 text-indigo-500" />
+                <h4 className="text-xs font-black uppercase tracking-widest text-indigo-600">তথ্যসূত্র এবং সোর্স</h4>
+             </div>
+             <div className="flex flex-wrap gap-2">
+                {groundingSources.map((src, i) => (
+                  src.web && (
+                    <a key={i} href={src.web.uri} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-5 py-3 bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 rounded-2xl text-[10px] font-black shadow-sm hover:shadow-md hover:bg-indigo-600 hover:text-white transition-all border border-indigo-100 dark:border-indigo-900/30">
+                       <ExternalLink className="w-3 h-3" />
+                       {src.web.title || 'Source'}
+                    </a>
+                  )
+                ))}
+             </div>
+          </div>
+        )}
       </div>
     );
   };
@@ -459,7 +482,7 @@ const App: React.FC = () => {
               </div>
               <div className="space-y-4">
                 <button onClick={() => !isLoggingIn && simulateSocialLogin('google')} disabled={!!isLoggingIn} className={`w-full py-5 px-8 rounded-3xl border font-black text-sm flex items-center justify-center gap-4 transition-all shadow-lg active:scale-95 bg-white border-slate-100 hover:bg-slate-50 text-slate-700 relative overflow-hidden`}>{isLoggingIn === 'google' ? <Loader2 className="w-6 h-6 animate-spin text-indigo-600" /> : <><Chrome className="w-6 h-6 text-rose-500" /> CONTINUE WITH GOOGLE</>}{isLoggingIn === 'google' && <div className="absolute inset-0 bg-white/60 backdrop-blur-sm flex items-center justify-center text-[10px] font-black text-indigo-600 uppercase tracking-widest">Connecting...</div>}</button>
-                <button onClick={() => !isLoggingIn && simulateSocialLogin('facebook')} disabled={!!isLoggingIn} className={`w-full py-5 px-8 rounded-3xl font-black text-sm flex items-center justify-center gap-4 transition-all shadow-lg active:scale-95 bg-[#1877F2] text-white hover:bg-[#166fe5] border-none relative overflow-hidden`}>{isLoggingIn === 'facebook' ? <Loader2 className="w-6 h-6 animate-spin" /> : <><Facebook className="w-6 h-6 fill-current" /> CONTINUE WITH FACEBOOK</>}{isLoggingIn === 'facebook' && <div className="absolute inset-0 bg-[#1877F2]/60 backdrop-blur-sm flex items-center justify-center text-[10px] font-black uppercase tracking-widest">Connecting...</div>}</button>
+                <button onClick={() => !isLoggingIn && simulateSocialLogin('facebook')} disabled={!!isLoggingIn} className={`w-full py-5 px-8 rounded-3xl font-black text-sm flex items-center justify-center gap-4 transition-all shadow-lg active:scale-95 bg-[#1877F2] text-white border-none relative overflow-hidden`}>{isLoggingIn === 'facebook' ? <Loader2 className="w-6 h-6 animate-spin" /> : <><Facebook className="w-6 h-6 fill-current" /> CONTINUE WITH FACEBOOK</>}{isLoggingIn === 'facebook' && <div className="absolute inset-0 bg-[#1877F2]/60 backdrop-blur-sm flex items-center justify-center text-[10px] font-black uppercase tracking-widest">Connecting...</div>}</button>
               </div>
               <div className="text-center"><p className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">Secure Login via Official Auth</p></div>
             </div>
@@ -544,7 +567,7 @@ const App: React.FC = () => {
 
           {activeTab === AppTab.Study && (
              <div className="max-w-4xl mx-auto space-y-12 py-10 text-center">
-                <div className="space-y-6"><div className="w-24 h-24 bg-indigo-600 text-white rounded-[2rem] flex items-center justify-center mx-auto shadow-2xl shadow-indigo-200"><BookOpen className="w-12 h-12" /></div><div className="space-y-2"><h2 className="text-4xl md:text-5xl font-black tracking-tight">Bible Discovery</h2><p className="opacity-80 text-lg font-medium">পদের গভীর ব্যাখ্যা ও অর্থ দেখতে সার্চ করুন।</p></div></div>
+                <div className="space-y-6"><div className="w-24 h-24 bg-indigo-600 text-white rounded-[2rem] flex items-center justify-center mx-auto shadow-2xl shadow-indigo-200"><BookOpen className="w-12 h-12" /></div><div className="space-y-2"><h2 className="text-4xl md:text-5xl font-black tracking-tight">Bible Discovery</h2><p className="opacity-80 text-lg font-medium">রিয়েল-টাইম তথ্য ও গভীর ব্যাখ্যা দ্রুত দেখতে সার্চ করুন।</p></div></div>
                 <div className="relative group max-w-2xl mx-auto">
                    <input 
                      type="text" 
@@ -566,9 +589,16 @@ const App: React.FC = () => {
                 {(verseExplanation || isExplaining) && (
                    <div className="space-y-8">
                       {isExplaining && !verseExplanation ? (
-                         <div className={`p-16 rounded-[3.5rem] border shadow-2xl ${cardBgClasses} animate-pulse flex flex-col items-center gap-6`}>
-                            <Loader2 className="w-12 h-12 animate-spin text-indigo-600" />
-                            <p className="font-black text-xs uppercase tracking-[0.3em] opacity-40">Gemini is searching scriptures...</p>
+                         <div className={`p-16 rounded-[3.5rem] border shadow-2xl ${cardBgClasses} flex flex-col items-center gap-6`}>
+                            <div className="relative">
+                               <Loader2 className="w-12 h-12 animate-spin text-indigo-600" />
+                               <Sparkles className="absolute -top-2 -right-2 w-5 h-5 text-amber-400 animate-pulse" />
+                            </div>
+                            <p className="font-black text-xs uppercase tracking-[0.3em] opacity-40 text-indigo-600/80">ব্যাখ্যা তৈরি হচ্ছে অনুগ্রহ করে অপেক্ষা করুন</p>
+                            <div className="flex items-center gap-2 text-[10px] font-black uppercase text-slate-300">
+                               <CloudLightning className="w-3 h-3 animate-pulse" />
+                               High Speed Grounding Active...
+                            </div>
                          </div>
                       ) : (
                         <>
@@ -630,7 +660,7 @@ const App: React.FC = () => {
                       </div>
                    </div>
                 ) : (
-                  <div className="max-w-md mx-auto space-y-12 py-10 text-center">
+                  <div className="max-md mx-auto space-y-12 py-10 text-center">
                     <div className={`w-28 h-28 mx-auto rounded-[2.5rem] flex items-center justify-center text-white bg-indigo-600 shadow-2xl shadow-indigo-100`}><LogIn className="w-12 h-12" /></div>
                     <div className="space-y-4">
                       <button onClick={() => setShowLoginModal(true)} className={`w-full py-5 px-8 rounded-3xl border font-black text-sm flex items-center justify-center gap-4 transition-all hover:shadow-xl active:scale-95 ${theme === Theme.Dark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-slate-200'}`}><Chrome className="w-6 h-6 text-rose-500" /> CONTINUE WITH GMAIL</button>
