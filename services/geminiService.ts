@@ -2,15 +2,14 @@ import { GoogleGenAI, Modality, Type } from "@google/genai";
 
 /**
  * Retrieves the API key with fallback support
+ * Priority: process.env.API_KEY > window.API_KEY
  */
 const getApiKey = () => {
-  // First priority: environment variable
   const envKey = process.env.API_KEY;
-  if (envKey && envKey.trim().length > 5) return envKey.trim();
+  if (envKey && envKey.trim().length > 10) return envKey.trim();
   
-  // Fallback: check window object if user placed it in index.html (experimental)
   const windowKey = (window as any).API_KEY;
-  if (windowKey && windowKey.trim().length > 5) return windowKey.trim();
+  if (windowKey && windowKey.trim().length > 10) return windowKey.trim();
   
   return null;
 };
