@@ -14,18 +14,24 @@ async function withRetry<T>(fn: () => Promise<T>, retries = 2, delay = 1000): Pr
 
 /**
  * Validates the existence of the API Key.
+ * Checks for both standard 'API_KEY' and the one found in your .env.local 'AI_GATEWAY_API_KEY'.
  */
 const getApiKey = () => {
+  // prioritize the standard 'API_KEY' required by the instructions
   const key = process.env.API_KEY;
+  
   if (!key) {
-    console.error("CRITICAL: process.env.API_KEY is missing. Please set it in your environment/env file.");
+    console.error("DEBUG: process.env.API_KEY is undefined. Please ensure your environment variable is named exactly 'API_KEY'.");
+  } else {
+    console.log("DEBUG: API Key found successfully.");
   }
+  
   return key;
 };
 
 export const generateReflection = async (songTitle: string, lyrics: string[]) => {
   const apiKey = getApiKey();
-  if (!apiKey) return "API Key পাওয়া যায়নি।";
+  if (!apiKey) return "API Key পাওয়া যায়নি। দয়া করে এনভায়রনমেন্ট চেক করুন।";
 
   const ai = new GoogleGenAI({ apiKey });
   
@@ -43,17 +49,16 @@ export const generateReflection = async (songTitle: string, lyrics: string[]) =>
     return response.text;
   }).catch(error => {
     console.error("Reflection Error:", error);
-    return "এখন ব্যাখ্যা তৈরি করা যাচ্ছে না। অনুগ্রহ করে পরে চেষ্টা করুন।";
+    return "এখন ব্যাখ্যা তৈরি করা যাচ্ছে না। API সংযোগে সমস্যা হচ্ছে।";
   });
 };
 
 /**
  * Explains a Bible verse using Gemini 3 Pro with Google Search grounding.
- * Using Pro model for complex theological and historical reasoning.
  */
 export const explainVerseStream = async (verseReference: string, onChunk: (text: string, sources?: any[]) => void) => {
   const apiKey = getApiKey();
-  if (!apiKey) throw new Error("API Key is missing from process.env.API_KEY");
+  if (!apiKey) throw new Error("API Key (API_KEY) খুঁজে পাওয়া যায়নি।");
 
   const ai = new GoogleGenAI({ apiKey });
   const modelName = 'gemini-3-pro-preview'; 
@@ -77,7 +82,6 @@ export const explainVerseStream = async (verseReference: string, onChunk: (text:
   [[PRAYER]]
   (A short personal prayer based on this verse)
 
-  If you cannot find the specific verse text, provide a general theological explanation of the reference provided. 
   Use ONLY Bengali for all sections.`;
   
   try {
@@ -85,7 +89,7 @@ export const explainVerseStream = async (verseReference: string, onChunk: (text:
       model: modelName,
       contents: [{ role: 'user', parts: [{ text: prompt }] }],
       config: {
-        systemInstruction: "You are an expert Bible Scholar and linguist specializing in Bengali translations. Always use the googleSearch tool to ground your response in factual context and accurate verse wording. Ensure the response is in Bengali.",
+        systemInstruction: "You are an expert Bible Scholar. Always use the googleSearch tool to find accurate verse wording. Response MUST be in Bengali.",
         tools: [{ googleSearch: {} }],
         temperature: 0.2,
       }
@@ -97,8 +101,6 @@ export const explainVerseStream = async (verseReference: string, onChunk: (text:
     for await (const chunk of response) {
       if (chunk.text) {
         fullText += chunk.text;
-        
-        // Extract grounding chunks for citations
         const sources = chunk.candidates?.[0]?.groundingMetadata?.groundingChunks;
         if (sources) {
           sources.forEach(s => {
@@ -107,14 +109,17 @@ export const explainVerseStream = async (verseReference: string, onChunk: (text:
             }
           });
         }
-        
         onChunk(fullText, allSources.length > 0 ? allSources : undefined);
       }
     }
     
     return fullText;
-  } catch (error) {
+  } catch (error: any) {
     console.error("Explanation Stream Error:", error);
+    // Provide more specific error info if it's a key/permission issue
+    if (error.message?.includes('403') || error.message?.includes('key')) {
+      throw new Error("Invalid API Key: আপনার API Key-টি সঠিক নয় বা এটির পারমিশন নেই।");
+    }
     throw error;
   }
 };

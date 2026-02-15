@@ -9,7 +9,7 @@ import {
   Share2, Check, Bookmark, Trash2, 
   Moon, Sun, LogIn, UserCircle, 
   ExternalLink, Quote, ScrollText, Gem, Sprout, HandHelping,
-  AlertCircle, Globe
+  AlertCircle, Globe, ShieldAlert
 } from 'lucide-react';
 import { fetchSongFromAI, explainVerseStream } from './services/geminiService';
 
@@ -74,6 +74,7 @@ const App: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [studyQuery, setStudyQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState<string>('All');
+  const [apiKeyMissing, setApiKeyMissing] = useState(false);
   
   const [theme, setTheme] = useState<Theme>(() => {
     const saved = localStorage.getItem('sm_theme');
@@ -121,6 +122,12 @@ const App: React.FC = () => {
     localStorage.setItem('sm_theme', theme);
     localStorage.setItem('sm_user', JSON.stringify(user));
     document.documentElement.className = theme;
+    
+    // Check if API key exists on mount
+    if (!process.env.API_KEY) {
+      setApiKeyMissing(true);
+      console.warn("API_KEY is missing from process.env");
+    }
   }, [favorites, savedStudies, theme, user]);
 
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
@@ -191,10 +198,9 @@ const App: React.FC = () => {
       }
     } catch (error) {
       console.error(error);
-      const msg = error instanceof Error && error.message.includes("API Key") 
-        ? "API Key পাওয়া যায়নি। এনভায়রনমেন্ট সেটআপ চেক করুন।" 
-        : "দুঃখিত, তথ্য খুঁজতে সমস্যা হচ্ছে। ইন্টারনেট চেক করে পুনরায় চেষ্টা করুন।";
+      const msg = error instanceof Error ? error.message : "দুঃখিত, তথ্য খুঁজতে সমস্যা হচ্ছে। ইন্টারনেট চেক করে পুনরায় চেষ্টা করুন।";
       setVerseExplanation(msg);
+      showToast(msg, "error");
     } finally {
       setIsExplaining(false);
     }
@@ -335,6 +341,14 @@ const App: React.FC = () => {
         </div>
       )}
 
+      {/* API Key Missing Alert */}
+      {apiKeyMissing && (
+        <div className="fixed top-20 left-0 right-0 z-[90] px-6 py-2 bg-amber-500 text-white text-xs font-bold text-center flex items-center justify-center gap-2">
+          <ShieldAlert className="w-4 h-4" />
+          API Key (API_KEY) খুঁজে পাওয়া যায়নি। সার্চ কাজ করবে না।
+        </div>
+      )}
+
       {showLoginModal && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center p-6 bg-black/60 backdrop-blur-sm animate-fadeIn">
           <div className="bg-white w-full max-w-sm rounded-[2.5rem] shadow-2xl overflow-hidden animate-scaleUp">
@@ -376,7 +390,7 @@ const App: React.FC = () => {
         </div>
       </header>
 
-      <main className="flex-1 w-full max-w-6xl mx-auto px-6 pt-24 md:pt-32 pb-24 md:pb-12">
+      <main className={`flex-1 w-full max-w-6xl mx-auto px-6 ${apiKeyMissing ? 'pt-28 md:pt-36' : 'pt-24 md:pt-32'} pb-24 md:pb-12`}>
         <div className="page-transition">
           {activeTab === AppTab.Library && (
             <div className="space-y-8">
