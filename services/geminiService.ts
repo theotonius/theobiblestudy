@@ -1,62 +1,33 @@
 
 import { GoogleGenAI, Modality, Type } from "@google/genai";
 
-// Retry Logic for stability
-async function withRetry<T>(fn: () => Promise<T>, retries = 2, delay = 1000): Promise<T> {
-  try {
-    return await fn();
-  } catch (error) {
-    if (retries <= 0) throw error;
-    await new Promise(resolve => setTimeout(resolve, delay));
-    return withRetry(fn, retries - 1, delay * 2);
-  }
-}
-
 /**
- * The API key must be obtained exclusively from the environment variable process.env.API_KEY.
- * This is the standard way the app retrieves its credentials.
+ * Generate a spiritual reflection for a song using Gemini 3 Flash.
  */
-const getApiKey = () => {
-  const key = process.env.API_KEY;
-  if (!key) {
-    console.error("CRITICAL ERROR: process.env.API_KEY is missing. Check your .env.local file.");
-  }
-  return key;
-};
-
 export const generateReflection = async (songTitle: string, lyrics: string[]) => {
-  const apiKey = getApiKey();
-  if (!apiKey) return "API Key পাওয়া যায়নি। দয়া করে আপনার .env.local ফাইলটি চেক করুন।";
-
-  const ai = new GoogleGenAI({ apiKey });
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   
-  return withRetry(async () => {
-    const prompt = `Based on the lyrics of the Bible song "${songTitle}", provide a short spiritual reflection and a related Bible verse in Bengali. 
-    Lyrics: ${lyrics.join(' ')}`;
-    
+  try {
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
-      contents: prompt,
+      contents: `Based on the lyrics of the Bible song "${songTitle}", provide a short spiritual reflection and a related Bible verse in Bengali. 
+      Lyrics: ${lyrics.join(' ')}`,
       config: {
         systemInstruction: "You are a thoughtful spiritual guide. Provide encouraging and deep reflections in Bengali."
       }
     });
     return response.text;
-  }).catch(error => {
+  } catch (error) {
     console.error("Reflection Error:", error);
-    return "এখন ব্যাখ্যা তৈরি করা যাচ্ছে না। সম্ভবত আপনার এপিআই কী-তে সমস্যা আছে।";
-  });
+    return "দুঃখিত, এই মুহূর্তে ব্যাখ্যা তৈরি করা সম্ভব হচ্ছে না। আপনার API Key চেক করুন।";
+  }
 };
 
 /**
  * Explains a Bible verse using Gemini 3 Flash with Google Search grounding.
  */
 export const explainVerseStream = async (verseReference: string, onChunk: (text: string, sources?: any[]) => void) => {
-  const apiKey = getApiKey();
-  if (!apiKey) throw new Error("API Key (API_KEY) খুঁজে পাওয়া যায়নি।");
-
-  const ai = new GoogleGenAI({ apiKey });
-  const modelName = 'gemini-3-flash-preview'; 
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   
   const prompt = `Please search for and provide a comprehensive explanation for the Bible verse: "${verseReference}". 
   MANDATORY: You must search the web to find the EXACT text of this verse in Bengali.
@@ -81,7 +52,7 @@ export const explainVerseStream = async (verseReference: string, onChunk: (text:
   
   try {
     const response = await ai.models.generateContentStream({
-      model: modelName,
+      model: 'gemini-3-flash-preview',
       contents: [{ role: 'user', parts: [{ text: prompt }] }],
       config: {
         systemInstruction: "You are an expert Bible Scholar. Always use the googleSearch tool to find accurate verse wording. Your response MUST be in Bengali.",
@@ -107,21 +78,20 @@ export const explainVerseStream = async (verseReference: string, onChunk: (text:
         onChunk(fullText, allSources.length > 0 ? allSources : undefined);
       }
     }
-    
     return fullText;
-  } catch (error: any) {
+  } catch (error) {
     console.error("Explanation Stream Error:", error);
     throw error;
   }
 };
 
+/**
+ * Searches for song lyrics using Gemini 3 Flash.
+ */
 export const fetchSongFromAI = async (query: string) => {
-  const apiKey = getApiKey();
-  if (!apiKey) return null;
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
-  const ai = new GoogleGenAI({ apiKey });
-
-  return withRetry(async () => {
+  try {
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
       contents: `Find the lyrics for the Bible song: "${query}". Return as JSON.`,
@@ -141,24 +111,24 @@ export const fetchSongFromAI = async (query: string) => {
     });
     const text = response.text?.trim() || '{}';
     return JSON.parse(text);
-  }).catch(error => {
+  } catch (error) {
     console.error("Fetch Song Error:", error);
     return null;
-  });
+  }
 };
 
+/**
+ * Converts lyrics to speech using Gemini TTS model.
+ */
 export const speakLyrics = async (text: string) => {
-  const apiKey = getApiKey();
-  if (!apiKey) return null;
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
-  const ai = new GoogleGenAI({ apiKey });
-
-  return withRetry(async () => {
+  try {
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash-preview-tts",
-      contents: [{ parts: [{ text: `Read these lyrics warmly: ${text}` }] }],
+      contents: [{ parts: [{ text: `Read these lyrics warmly and clearly: ${text}` }] }],
       config: {
-        responseModalalities: [Modality.AUDIO],
+        responseModalities: [Modality.AUDIO],
         speechConfig: {
           voiceConfig: {
             prebuiltVoiceConfig: { voiceName: 'Kore' },
@@ -166,16 +136,15 @@ export const speakLyrics = async (text: string) => {
         },
       },
     });
-    const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
-    if (!base64Audio) throw new Error("No audio data returned");
-    return base64Audio;
-  }).catch(error => {
+    return response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+  } catch (error) {
     console.error("TTS Error:", error);
     return null;
-  });
+  }
 };
 
-export const decodeBase64Audio = (base64: string) => {
+// Audio Utilities
+export function decode(base64: string) {
   const binaryString = atob(base64);
   const len = binaryString.length;
   const bytes = new Uint8Array(len);
@@ -183,7 +152,9 @@ export const decodeBase64Audio = (base64: string) => {
     bytes[i] = binaryString.charCodeAt(i);
   }
   return bytes;
-};
+}
+
+export const decodeBase64Audio = decode;
 
 export const decodeAudioData = async (
   data: Uint8Array,
