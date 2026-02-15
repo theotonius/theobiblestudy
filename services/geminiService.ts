@@ -4,12 +4,8 @@ import { GoogleGenAI, Modality, Type } from "@google/genai";
  * গান বা কবিতার আধ্যাত্মিক ব্যাখ্যা তৈরি করে (Gemini 3 Flash)।
  */
 export const generateReflection = async (songTitle: string, lyrics: string[]) => {
-  const apiKey = process.env.API_KEY;
-  if (!apiKey) return "API Key পাওয়া যায়নি। দয়া করে আপনার এনভায়রনমেন্ট চেক করুন।";
-
-  const ai = new GoogleGenAI({ apiKey });
-  
   try {
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
       contents: `Based on the lyrics of the Bible song "${songTitle}", provide a short spiritual reflection and a related Bible verse in Bengali. 
@@ -29,33 +25,29 @@ export const generateReflection = async (songTitle: string, lyrics: string[]) =>
  * গুগল সার্চ ব্যবহার করে বাইবেলের পদের ব্যাখ্যা দেয় (Gemini 3 Flash)।
  */
 export const explainVerseStream = async (verseReference: string, onChunk: (text: string, sources?: any[]) => void) => {
-  const apiKey = process.env.API_KEY;
-  if (!apiKey) throw new Error("API Key (API_KEY) খুঁজে পাওয়া যায়নি।");
-
-  const ai = new GoogleGenAI({ apiKey });
-  
-  const prompt = `Please search for and provide a comprehensive explanation for the Bible verse: "${verseReference}". 
-  MANDATORY: You must search the web to find the EXACT text of this verse in Bengali.
-  
-  Structure your response accurately in Bengali using these markers:
-  [[VERSE]]
-  (The full verse text in Bengali)
-  
-  [[CONTEXT]]
-  (The historical and biblical context)
-  
-  [[MEANING]]
-  (The spiritual meaning)
-  
-  [[APPLICATION]]
-  (Practical life application)
-  
-  [[PRAYER]]
-  (A short prayer)
-
-  Use ONLY Bengali for all sections.`;
-  
   try {
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const prompt = `Please search for and provide a comprehensive explanation for the Bible verse: "${verseReference}". 
+    MANDATORY: You must search the web to find the EXACT text of this verse in Bengali.
+    
+    Structure your response accurately in Bengali using these markers:
+    [[VERSE]]
+    (The full verse text in Bengali)
+    
+    [[CONTEXT]]
+    (The historical and biblical context)
+    
+    [[MEANING]]
+    (The spiritual meaning)
+    
+    [[APPLICATION]]
+    (Practical life application)
+    
+    [[PRAYER]]
+    (A short prayer)
+
+    Use ONLY Bengali for all sections.`;
+    
     const response = await ai.models.generateContentStream({
       model: 'gemini-3-flash-preview',
       contents: [{ role: 'user', parts: [{ text: prompt }] }],
@@ -94,12 +86,8 @@ export const explainVerseStream = async (verseReference: string, onChunk: (text:
  * এআই ব্যবহার করে গানের লিরিক্স খুঁজে বের করে (Gemini 3 Flash)।
  */
 export const fetchSongFromAI = async (query: string) => {
-  const apiKey = process.env.API_KEY;
-  if (!apiKey) return null;
-
-  const ai = new GoogleGenAI({ apiKey });
-
   try {
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
       contents: `Find the lyrics for the Bible song: "${query}". Return as JSON.`,
@@ -129,17 +117,13 @@ export const fetchSongFromAI = async (query: string) => {
  * লিরিক্স পাঠ করে শোনায় (Gemini TTS)।
  */
 export const speakLyrics = async (text: string) => {
-  const apiKey = process.env.API_KEY;
-  if (!apiKey) return null;
-
-  const ai = new GoogleGenAI({ apiKey });
-
   try {
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash-preview-tts",
       contents: [{ parts: [{ text: `Read these lyrics warmly: ${text}` }] }],
       config: {
-        responseModalalities: [Modality.AUDIO],
+        responseModalities: [Modality.AUDIO],
         speechConfig: {
           voiceConfig: {
             prebuiltVoiceConfig: { voiceName: 'Kore' },
