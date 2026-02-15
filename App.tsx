@@ -159,8 +159,12 @@ const App: React.FC = () => {
         setSelectedSong(newSong);
         setActiveTab(AppTab.Reader);
         setSearchQuery('');
-      } else { showToast("দুঃখিত, কোনো ফলাফল পাওয়া যায়নি।", "error"); }
-    } catch { showToast("সার্ভার সমস্যা। পরে চেষ্টা করুন।", "error"); }
+      } else { 
+        showToast("দুঃখিত, কোনো ফলাফল পাওয়া যায়নি। API কী চেক করুন।", "error"); 
+      }
+    } catch { 
+      showToast("সার্ভার সমস্যা। ইন্টারনেট বা API কী চেক করুন।", "error"); 
+    }
     finally { setIsSearchingAI(false); }
   };
 
@@ -187,7 +191,10 @@ const App: React.FC = () => {
       }
     } catch (error) {
       console.error(error);
-      setVerseExplanation("দুঃখিত, তথ্য খুঁজতে সমস্যা হচ্ছে। ইন্টারনেট চেক করে পুনরায় চেষ্টা করুন।");
+      const msg = error instanceof Error && error.message.includes("API Key") 
+        ? "API Key পাওয়া যায়নি। এনভায়রনমেন্ট সেটআপ চেক করুন।" 
+        : "দুঃখিত, তথ্য খুঁজতে সমস্যা হচ্ছে। ইন্টারনেট চেক করে পুনরায় চেষ্টা করুন।";
+      setVerseExplanation(msg);
     } finally {
       setIsExplaining(false);
     }
@@ -271,7 +278,6 @@ const App: React.FC = () => {
         {groundingSources.length > 0 && (
           <div className="pt-6 border-t border-slate-100 dark:border-slate-800 space-y-4">
              <div className="flex items-center gap-2 opacity-40">
-               {/* Fixed missing Globe import by importing it from lucide-react */}
                <Globe className="w-4 h-4" />
                <span className="text-[10px] font-black uppercase tracking-widest">Sources</span>
              </div>

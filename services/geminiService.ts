@@ -1,9 +1,6 @@
 
 import { GoogleGenAI, Modality, Type } from "@google/genai";
 
-// Initialize AI with API Key from environment variables
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-
 // Retry Logic for stability
 async function withRetry<T>(fn: () => Promise<T>, retries = 2, delay = 1000): Promise<T> {
   try {
@@ -15,7 +12,23 @@ async function withRetry<T>(fn: () => Promise<T>, retries = 2, delay = 1000): Pr
   }
 }
 
+/**
+ * Validates the existence of the API Key.
+ */
+const getApiKey = () => {
+  const key = process.env.API_KEY;
+  if (!key) {
+    console.error("CRITICAL: process.env.API_KEY is missing. Please set it in your environment/env file.");
+  }
+  return key;
+};
+
 export const generateReflection = async (songTitle: string, lyrics: string[]) => {
+  const apiKey = getApiKey();
+  if (!apiKey) return "API Key পাওয়া যায়নি।";
+
+  const ai = new GoogleGenAI({ apiKey });
+  
   return withRetry(async () => {
     const prompt = `Based on the lyrics of the Bible song "${songTitle}", provide a short spiritual reflection and a related Bible verse in Bengali. 
     Lyrics: ${lyrics.join(' ')}`;
@@ -35,41 +48,44 @@ export const generateReflection = async (songTitle: string, lyrics: string[]) =>
 };
 
 /**
- * Explains a Bible verse using Gemini 3 Flash with Google Search grounding.
- * This ensures the most accurate and up-to-date theological info.
+ * Explains a Bible verse using Gemini 3 Pro with Google Search grounding.
+ * Using Pro model for complex theological and historical reasoning.
  */
 export const explainVerseStream = async (verseReference: string, onChunk: (text: string, sources?: any[]) => void) => {
-  try {
-    const aiInstance = new GoogleGenAI({ apiKey: process.env.API_KEY });
-    const modelName = 'gemini-3-flash-preview'; 
-    
-    const prompt = `Please search for and provide a comprehensive explanation for the Bible verse: "${verseReference}". 
-    MANDATORY: You must search the web to find the EXACT text of this verse in Bengali.
-    
-    Structure your response accurately in Bengali using these markers:
-    [[VERSE]]
-    (The full verse text in Bengali)
-    
-    [[CONTEXT]]
-    (The historical and biblical context of this chapter/book)
-    
-    [[MEANING]]
-    (The spiritual and theological meaning)
-    
-    [[APPLICATION]]
-    (Practical life application for a modern reader)
-    
-    [[PRAYER]]
-    (A short personal prayer based on this verse)
+  const apiKey = getApiKey();
+  if (!apiKey) throw new Error("API Key is missing from process.env.API_KEY");
 
-    If you cannot find the specific verse text, provide a general theological explanation of the reference provided. 
-    Use ONLY Bengali for all sections.`;
-    
-    const response = await aiInstance.models.generateContentStream({
+  const ai = new GoogleGenAI({ apiKey });
+  const modelName = 'gemini-3-pro-preview'; 
+  
+  const prompt = `Please search for and provide a comprehensive explanation for the Bible verse: "${verseReference}". 
+  MANDATORY: You must search the web to find the EXACT text of this verse in Bengali.
+  
+  Structure your response accurately in Bengali using these markers:
+  [[VERSE]]
+  (The full verse text in Bengali)
+  
+  [[CONTEXT]]
+  (The historical and biblical context of this chapter/book)
+  
+  [[MEANING]]
+  (The spiritual and theological meaning)
+  
+  [[APPLICATION]]
+  (Practical life application for a modern reader)
+  
+  [[PRAYER]]
+  (A short personal prayer based on this verse)
+
+  If you cannot find the specific verse text, provide a general theological explanation of the reference provided. 
+  Use ONLY Bengali for all sections.`;
+  
+  try {
+    const response = await ai.models.generateContentStream({
       model: modelName,
       contents: [{ role: 'user', parts: [{ text: prompt }] }],
       config: {
-        systemInstruction: "You are an expert Bible Scholar and linguist specializing in Bengali translations. Use the googleSearch tool to find exact verse wording and accurate historical context. Do not block religious content. Always provide grounded, factual responses in Bengali.",
+        systemInstruction: "You are an expert Bible Scholar and linguist specializing in Bengali translations. Always use the googleSearch tool to ground your response in factual context and accurate verse wording. Ensure the response is in Bengali.",
         tools: [{ googleSearch: {} }],
         temperature: 0.2,
       }
@@ -96,8 +112,6 @@ export const explainVerseStream = async (verseReference: string, onChunk: (text:
       }
     }
     
-    if (!fullText) throw new Error("Connection failed or empty response.");
-    
     return fullText;
   } catch (error) {
     console.error("Explanation Stream Error:", error);
@@ -106,6 +120,11 @@ export const explainVerseStream = async (verseReference: string, onChunk: (text:
 };
 
 export const fetchSongFromAI = async (query: string) => {
+  const apiKey = getApiKey();
+  if (!apiKey) return null;
+
+  const ai = new GoogleGenAI({ apiKey });
+
   return withRetry(async () => {
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
@@ -133,6 +152,11 @@ export const fetchSongFromAI = async (query: string) => {
 };
 
 export const speakLyrics = async (text: string) => {
+  const apiKey = getApiKey();
+  if (!apiKey) return null;
+
+  const ai = new GoogleGenAI({ apiKey });
+
   return withRetry(async () => {
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash-preview-tts",
