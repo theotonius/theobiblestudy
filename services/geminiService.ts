@@ -2,7 +2,7 @@
 import { GoogleGenAI, Modality, Type } from "@google/genai";
 
 /**
- * Generate a spiritual reflection for a song using Gemini 3 Flash.
+ * গান বা কবিতার আধ্যাত্মিক ব্যাখ্যা তৈরি করে (Gemini 3 Flash)।
  */
 export const generateReflection = async (songTitle: string, lyrics: string[]) => {
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
@@ -24,7 +24,7 @@ export const generateReflection = async (songTitle: string, lyrics: string[]) =>
 };
 
 /**
- * Explains a Bible verse using Gemini 3 Flash with Google Search grounding.
+ * গুগল সার্চ ব্যবহার করে বাইবেলের পদের ব্যাখ্যা দেয় (Gemini 3 Flash)।
  */
 export const explainVerseStream = async (verseReference: string, onChunk: (text: string, sources?: any[]) => void) => {
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
@@ -86,7 +86,7 @@ export const explainVerseStream = async (verseReference: string, onChunk: (text:
 };
 
 /**
- * Searches for song lyrics using Gemini 3 Flash.
+ * এআই ব্যবহার করে গানের লিরিক্স খুঁজে বের করে (Gemini 3 Flash)।
  */
 export const fetchSongFromAI = async (query: string) => {
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
@@ -118,7 +118,7 @@ export const fetchSongFromAI = async (query: string) => {
 };
 
 /**
- * Converts lyrics to speech using Gemini TTS model.
+ * লিরিক্স পাঠ করে শোনায় (Gemini TTS)।
  */
 export const speakLyrics = async (text: string) => {
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
@@ -126,9 +126,9 @@ export const speakLyrics = async (text: string) => {
   try {
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash-preview-tts",
-      contents: [{ parts: [{ text: `Read these lyrics warmly and clearly: ${text}` }] }],
+      contents: [{ parts: [{ text: `Read these lyrics warmly: ${text}` }] }],
       config: {
-        responseModalities: [Modality.AUDIO],
+        responseModalalities: [Modality.AUDIO],
         speechConfig: {
           voiceConfig: {
             prebuiltVoiceConfig: { voiceName: 'Kore' },
@@ -143,7 +143,7 @@ export const speakLyrics = async (text: string) => {
   }
 };
 
-// Audio Utilities
+// Audio Decoding Utilities
 export function decode(base64: string) {
   const binaryString = atob(base64);
   const len = binaryString.length;
