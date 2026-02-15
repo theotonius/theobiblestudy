@@ -13,21 +13,20 @@ async function withRetry<T>(fn: () => Promise<T>, retries = 2, delay = 1000): Pr
 }
 
 /**
- * Validates the existence of the API Key.
- * Checks for standard 'API_KEY' or fallback from user's env file.
+ * The API key must be obtained exclusively from the environment variable process.env.API_KEY.
+ * This is the standard way the app retrieves its credentials.
  */
 const getApiKey = () => {
-  const key = process.env.API_KEY || (process.env as any).AI_GATEWAY_API_KEY;
-  
+  const key = process.env.API_KEY;
   if (!key) {
-    console.error("CRITICAL: API Key is missing. Please set 'API_KEY' in your .env file.");
+    console.error("CRITICAL ERROR: process.env.API_KEY is missing. Check your .env.local file.");
   }
   return key;
 };
 
 export const generateReflection = async (songTitle: string, lyrics: string[]) => {
   const apiKey = getApiKey();
-  if (!apiKey) return "API Key পাওয়া যায়নি।";
+  if (!apiKey) return "API Key পাওয়া যায়নি। দয়া করে আপনার .env.local ফাইলটি চেক করুন।";
 
   const ai = new GoogleGenAI({ apiKey });
   
@@ -45,16 +44,16 @@ export const generateReflection = async (songTitle: string, lyrics: string[]) =>
     return response.text;
   }).catch(error => {
     console.error("Reflection Error:", error);
-    return "এখন ব্যাখ্যা তৈরি করা যাচ্ছে না।";
+    return "এখন ব্যাখ্যা তৈরি করা যাচ্ছে না। সম্ভবত আপনার এপিআই কী-তে সমস্যা আছে।";
   });
 };
 
 /**
- * Explains a Bible verse using Gemini 3 Flash.
+ * Explains a Bible verse using Gemini 3 Flash with Google Search grounding.
  */
 export const explainVerseStream = async (verseReference: string, onChunk: (text: string, sources?: any[]) => void) => {
   const apiKey = getApiKey();
-  if (!apiKey) throw new Error("API Key খুঁজে পাওয়া যায়নি।");
+  if (!apiKey) throw new Error("API Key (API_KEY) খুঁজে পাওয়া যায়নি।");
 
   const ai = new GoogleGenAI({ apiKey });
   const modelName = 'gemini-3-flash-preview'; 
@@ -85,7 +84,7 @@ export const explainVerseStream = async (verseReference: string, onChunk: (text:
       model: modelName,
       contents: [{ role: 'user', parts: [{ text: prompt }] }],
       config: {
-        systemInstruction: "You are an expert Bible Scholar. Use googleSearch to find accurate verse wording. Response MUST be in Bengali.",
+        systemInstruction: "You are an expert Bible Scholar. Always use the googleSearch tool to find accurate verse wording. Your response MUST be in Bengali.",
         tools: [{ googleSearch: {} }],
         temperature: 0.2,
       }
