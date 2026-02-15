@@ -1,12 +1,26 @@
 import { GoogleGenAI, Modality, Type } from "@google/genai";
 
 /**
+ * Retrieves the API key with fallback support
+ */
+const getApiKey = () => {
+  // First priority: environment variable
+  const envKey = process.env.API_KEY;
+  if (envKey && envKey.trim().length > 5) return envKey.trim();
+  
+  // Fallback: check window object if user placed it in index.html (experimental)
+  const windowKey = (window as any).API_KEY;
+  if (windowKey && windowKey.trim().length > 5) return windowKey.trim();
+  
+  return null;
+};
+
+/**
  * আধ্যাত্মিক ব্যাখ্যা তৈরি করে
  */
 export const generateReflection = async (songTitle: string, lyrics: string[]) => {
-  const rawKey = process.env.API_KEY;
-  if (!rawKey) return "API Key পাওয়া যায়নি।";
-  const apiKey = rawKey.trim();
+  const apiKey = getApiKey();
+  if (!apiKey) return "API Key পাওয়া যায়নি। দয়া করে কী চেক করুন।";
 
   try {
     const ai = new GoogleGenAI({ apiKey });
@@ -29,9 +43,8 @@ export const generateReflection = async (songTitle: string, lyrics: string[]) =>
  * বাইবেলের পদের ব্যাখ্যা দেয়
  */
 export const explainVerseStream = async (verseReference: string, onChunk: (text: string, sources?: any[]) => void) => {
-  const rawKey = process.env.API_KEY;
-  if (!rawKey) throw new Error("API Key খুঁজে পাওয়া যায়নি।");
-  const apiKey = rawKey.trim();
+  const apiKey = getApiKey();
+  if (!apiKey) throw new Error("API Key খুঁজে পাওয়া যায়নি।");
 
   try {
     const ai = new GoogleGenAI({ apiKey });
@@ -67,9 +80,8 @@ export const explainVerseStream = async (verseReference: string, onChunk: (text:
  * লিরিক্স খুঁজে বের করে
  */
 export const fetchSongFromAI = async (query: string) => {
-  const rawKey = process.env.API_KEY;
-  if (!rawKey) return null;
-  const apiKey = rawKey.trim();
+  const apiKey = getApiKey();
+  if (!apiKey) return null;
 
   try {
     const ai = new GoogleGenAI({ apiKey });
@@ -101,9 +113,8 @@ export const fetchSongFromAI = async (query: string) => {
  * লিরিক্স পাঠ করে শোনায়
  */
 export const speakLyrics = async (text: string) => {
-  const rawKey = process.env.API_KEY;
-  if (!rawKey) return null;
-  const apiKey = rawKey.trim();
+  const apiKey = getApiKey();
+  if (!apiKey) return null;
 
   try {
     const ai = new GoogleGenAI({ apiKey });
