@@ -22,15 +22,6 @@ export interface SavedStudy {
   timestamp: number;
 }
 
-export interface Message {
-  id: string;
-  text: string;
-  senderId: string;
-  senderName: string;
-  senderPhoto: string;
-  timestamp: number;
-}
-
 export enum Theme {
   Light = 'light',
   Dark = 'dark',
@@ -42,7 +33,6 @@ export enum AppTab {
   Reader = 'reader',
   Reflections = 'reflections',
   Study = 'study',
-  Chat = 'chat',
   Profile = 'profile',
   Developer = 'developer'
 }

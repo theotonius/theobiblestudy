@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { BIBLE_SONGS, PRE_CACHED_STUDIES } from './constants';
-import { Song, AppTab, UserProfile, SavedStudy, Theme, Message } from './types';
+import { Song, AppTab, UserProfile, SavedStudy, Theme } from './types';
 import SongCard from './components/SongCard';
 import Reader from './components/Reader';
 import { 
@@ -93,10 +93,6 @@ const App: React.FC = () => {
     }
   });
 
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [newMessage, setNewMessage] = useState('');
-  const chatEndRef = useRef<HTMLDivElement>(null);
-
   const [isSearchingAI, setIsSearchingAI] = useState(false);
   const [isExplaining, setIsExplaining] = useState(false);
   const [verseExplanation, setVerseExplanation] = useState<string | null>(null);
@@ -164,17 +160,17 @@ const App: React.FC = () => {
     setIsStudySaved(false);
     
     try {
-      let firstChunk = false;
+      let firstChunkReceived = false;
       await explainVerseStream(query, (chunk, sources) => {
-        if (chunk.length > 5 && !firstChunk) {
-          firstChunk = true;
-          setIsExplaining(false);
+        if (!firstChunkReceived && chunk.trim().length > 0) {
+          firstChunkReceived = true;
+          // Don't stop loader until we have some meat, or until it's finished
         }
         setVerseExplanation(chunk);
         if (sources) setGroundingSources(sources);
       });
       
-      if (!firstChunk && !verseExplanation) {
+      if (!verseExplanation && !firstChunkReceived) {
         setVerseExplanation("দুঃখিত, কোনো তথ্য পাওয়া যায়নি। অনুগ্রহ করে পদের নাম পরিষ্কারভাবে লিখুন (যেমন: যোহন ৩:১৬)।");
       }
     } catch (error) {
@@ -203,16 +199,6 @@ const App: React.FC = () => {
     showToast("স্টাডি নোটটি সেভ করা হয়েছে।");
   };
 
-  const handleSendMessage = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!user) { showToast("মেসেজ পাঠাতে লগইন করুন।", "error"); return; }
-    if (!newMessage.trim()) return;
-    const msg: Message = { id: `msg-${Date.now()}`, text: newMessage, senderId: user.email, senderName: user.name, senderPhoto: user.photo, timestamp: Date.now() };
-    setMessages(prev => [...prev, msg]);
-    setNewMessage('');
-    setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
-  };
-
   const handleGoogleLoginSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!loginForm.name || !loginForm.email) return;
@@ -231,7 +217,6 @@ const App: React.FC = () => {
   }, [theme]);
 
   const cardBgClasses = theme === Theme.Dark ? 'bg-slate-800 border-slate-700' : theme === Theme.Sepia ? 'bg-[#e9dfc4] border-[#dcd0b3]' : 'bg-white border-slate-100';
-  const textTitleClasses = theme === Theme.Dark ? 'text-white' : theme === Theme.Sepia ? 'text-[#433422]' : 'text-slate-900';
 
   const renderFormattedExplanation = (text: string) => {
     if (!text) return null;
@@ -244,7 +229,7 @@ const App: React.FC = () => {
     ];
 
     const upperText = text.toUpperCase();
-    if (!sections.some(s => upperText.includes(s.key))) return <div className="whitespace-pre-wrap text-lg leading-relaxed">{text}</div>;
+    if (!sections.some(s => upperText.includes(s.key))) return <div className="whitespace-pre-wrap text-lg leading-relaxed font-serif p-6">{text}</div>;
 
     return (
       <div className="space-y-6">
@@ -411,31 +396,6 @@ const App: React.FC = () => {
              </div>
           )}
 
-          {activeTab === AppTab.Chat && (
-             <div className="max-w-2xl mx-auto flex flex-col h-[calc(100vh-240px)]">
-                <div className={`flex-1 overflow-y-auto p-4 space-y-4 no-scrollbar ${theme === Theme.Dark ? 'bg-slate-900/30' : 'bg-slate-50/50'} rounded-3xl mb-4 border border-dashed border-indigo-200`}>
-                   {messages.map(msg => {
-                      const isMe = user && msg.senderId === user.email;
-                      return (
-                        <div key={msg.id} className={`flex items-end gap-2 ${isMe ? 'flex-row-reverse' : 'flex-row'}`}>
-                           <img src={msg.senderPhoto} className="w-7 h-7 rounded-lg" />
-                           <div className={`max-w-[80%] p-3 rounded-2xl text-sm ${isMe ? 'bg-indigo-600 text-white rounded-br-none' : cardBgClasses + ' rounded-bl-none'}`}>
-                              <p className="text-[10px] opacity-60 font-black mb-1">{isMe ? 'You' : msg.senderName}</p>
-                              {msg.text}
-                           </div>
-                        </div>
-                      );
-                   })}
-                   {messages.length === 0 && <div className="h-full flex flex-col items-center justify-center opacity-30 text-center px-10 gap-4"><MessageSquare className="w-12 h-12" /><p className="font-bold">Community Chat-এ স্বাগতম। আপনার ভালো লাগা শেয়ার করুন।</p></div>}
-                   <div ref={chatEndRef} />
-                </div>
-                <form onSubmit={handleSendMessage} className="flex gap-2">
-                   <input type="text" value={newMessage} onChange={(e) => setNewMessage(e.target.value)} placeholder="বার্তা লিখুন..." className={`flex-1 p-4 rounded-2xl border ${cardBgClasses}`} />
-                   <button type="submit" className="p-4 bg-indigo-600 text-white rounded-2xl shadow-lg"><Send className="w-5 h-5" /></button>
-                </form>
-             </div>
-          )}
-
           {activeTab === AppTab.Reflections && (
              <div className="space-y-8">
                 <h2 className="text-3xl font-black">Saved Notes</h2>
@@ -470,12 +430,11 @@ const App: React.FC = () => {
         </div>
       </main>
 
-      {/* FIXED BOTTOM NAVIGATION (Option Bar) */}
+      {/* FIXED BOTTOM NAVIGATION */}
       <nav className={`fixed bottom-0 left-0 right-0 z-[100] px-4 pb-safe border-t backdrop-blur-xl transition-all ${theme === Theme.Dark ? 'bg-slate-900/95 border-slate-800 shadow-none' : 'bg-white/95 border-slate-100 shadow-[0_-10px_40px_rgba(0,0,0,0.05)]'}`}>
         <div className="max-w-md mx-auto flex items-center h-16 sm:h-20">
            <NavButton active={activeTab === AppTab.Library} onClick={() => setActiveTab(AppTab.Library)} icon={<Music />} label="Library" activeTheme={theme} />
            <NavButton active={activeTab === AppTab.Study} onClick={() => setActiveTab(AppTab.Study)} icon={<BookOpen />} label="Study" activeTheme={theme} />
-           <NavButton active={activeTab === AppTab.Chat} onClick={() => setActiveTab(AppTab.Chat)} icon={<MessageSquare />} label="Chat" activeTheme={theme} />
            <NavButton active={activeTab === AppTab.Reflections} onClick={() => setActiveTab(AppTab.Reflections)} icon={<Heart />} label="Saved" activeTheme={theme} />
            <NavButton active={activeTab === AppTab.Profile} onClick={() => setActiveTab(AppTab.Profile)} icon={<UserCircle />} label="Me" activeTheme={theme} />
         </div>

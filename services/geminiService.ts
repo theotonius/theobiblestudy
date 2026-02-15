@@ -43,32 +43,35 @@ export const explainVerseStream = async (verseReference: string, onChunk: (text:
     const aiInstance = new GoogleGenAI({ apiKey: process.env.API_KEY });
     const modelName = 'gemini-3-flash-preview'; 
     
-    const prompt = `Please search and explain the Bible verse: "${verseReference}". 
-    Structure your response accurately in Bengali using these exact markers:
+    const prompt = `Please search for and provide a comprehensive explanation for the Bible verse: "${verseReference}". 
+    MANDATORY: You must search the web to find the EXACT text of this verse in Bengali.
+    
+    Structure your response accurately in Bengali using these markers:
     [[VERSE]]
     (The full verse text in Bengali)
     
     [[CONTEXT]]
-    (The historical and biblical context)
+    (The historical and biblical context of this chapter/book)
     
     [[MEANING]]
     (The spiritual and theological meaning)
     
     [[APPLICATION]]
-    (Practical life application)
+    (Practical life application for a modern reader)
     
     [[PRAYER]]
-    (A short personal prayer)
+    (A short personal prayer based on this verse)
 
-    MANDATORY: Use ONLY Bengali for the content. Search Google to verify the exact wording and context.`;
+    If you cannot find the specific verse text, provide a general theological explanation of the reference provided. 
+    Use ONLY Bengali for all sections.`;
     
     const response = await aiInstance.models.generateContentStream({
       model: modelName,
       contents: [{ role: 'user', parts: [{ text: prompt }] }],
       config: {
-        systemInstruction: "You are an elite Bible Scholar. Use the googleSearch tool to provide highly accurate, grounded explanations. Do not block religious content. Output directly in Bengali.",
+        systemInstruction: "You are an expert Bible Scholar and linguist specializing in Bengali translations. Use the googleSearch tool to find exact verse wording and accurate historical context. Do not block religious content. Always provide grounded, factual responses in Bengali.",
         tools: [{ googleSearch: {} }],
-        temperature: 0.1,
+        temperature: 0.2,
       }
     });
 
