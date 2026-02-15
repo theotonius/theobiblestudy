@@ -122,7 +122,7 @@ const App: React.FC = () => {
     localStorage.setItem('sm_user', JSON.stringify(user));
     document.documentElement.className = theme;
     
-    // Improved key validation
+    // Key validation check
     const currentKey = process.env.API_KEY;
     if (!currentKey || currentKey.trim().length < 5) {
       setApiKeyMissing(true);
@@ -281,6 +281,24 @@ const App: React.FC = () => {
     );
   }
 
+  const navigationTabs = (
+    <>
+      <NavButton active={activeTab === AppTab.Library} onClick={() => setActiveTab(AppTab.Library)} icon={<Music />} label="Library" activeTheme={theme} />
+      <NavButton active={activeTab === AppTab.Study} onClick={() => setActiveTab(AppTab.Study)} icon={<BookOpen />} label="Study" activeTheme={theme} />
+      <NavButton active={activeTab === AppTab.Reflections} onClick={() => setActiveTab(AppTab.Reflections)} icon={<Heart />} label="Saved" activeTheme={theme} />
+      <NavButton active={activeTab === AppTab.Profile} onClick={() => setActiveTab(AppTab.Profile)} icon={<UserCircle />} label="Me" activeTheme={theme} />
+    </>
+  );
+
+  const mobileNavigationTabs = (
+    <>
+      <NavButton active={activeTab === AppTab.Library} onClick={() => setActiveTab(AppTab.Library)} icon={<Music />} label="Library" activeTheme={theme} mobile />
+      <NavButton active={activeTab === AppTab.Study} onClick={() => setActiveTab(AppTab.Study)} icon={<BookOpen />} label="Study" activeTheme={theme} mobile />
+      <NavButton active={activeTab === AppTab.Reflections} onClick={() => setActiveTab(AppTab.Reflections)} icon={<Heart />} label="Saved" activeTheme={theme} mobile />
+      <NavButton active={activeTab === AppTab.Profile} onClick={() => setActiveTab(AppTab.Profile)} icon={<UserCircle />} label="Me" activeTheme={theme} mobile />
+    </>
+  );
+
   return (
     <div className={`min-h-screen flex flex-col animate-fadeIn ${themeClasses}`}>
       {toast && (
@@ -290,15 +308,21 @@ const App: React.FC = () => {
         </div>
       )}
 
+      {/* Header - Desktop version uses structured tabs */}
       <header className={`fixed top-0 left-0 right-0 z-[100] border-b backdrop-blur-xl transition-all duration-300 ${theme === Theme.Dark ? 'bg-slate-900/90 border-slate-800' : 'bg-white/90 border-slate-200'}`}>
         <div className="max-w-6xl mx-auto px-6 h-16 md:h-20 flex items-center justify-between">
            <div className="flex items-center gap-3">
              <Music className="w-6 h-6 text-indigo-600" />
              <h1 className="text-lg font-black tracking-tighter">Sacred Melodies</h1>
            </div>
+
+           <div className="hidden md:flex items-center gap-2 mx-auto">
+              {navigationTabs}
+           </div>
+
            <div className="flex items-center gap-2">
               <button onClick={() => setTheme(theme === Theme.Dark ? Theme.Light : Theme.Dark)} className={`p-2 rounded-xl border ${cardBgClasses}`}>{theme === Theme.Dark ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-indigo-600" />}</button>
-              <button onClick={() => setActiveTab(AppTab.Profile)} className="w-8 h-8 rounded-full border overflow-hidden">{user ? <img src={user.photo} className="w-full h-full object-cover" /> : <UserCircle className="w-6 h-6 m-auto opacity-30" />}</button>
+              <button onClick={() => setActiveTab(AppTab.Profile)} className="w-8 h-8 rounded-full border overflow-hidden p-0.5">{user ? <img src={user.photo} className="w-full h-full object-cover rounded-full" /> : <UserCircle className="w-6 h-6 m-auto opacity-30" />}</button>
            </div>
         </div>
       </header>
@@ -353,31 +377,32 @@ const App: React.FC = () => {
           <div className="max-w-md mx-auto text-center space-y-8">
             {user ? (
               <div className="space-y-4">
-                <img src={user.photo} className="w-24 h-24 rounded-full mx-auto border-4 border-indigo-600" />
+                <img src={user.photo} className="w-24 h-24 rounded-full mx-auto border-4 border-indigo-600 shadow-xl" />
                 <h2 className="text-2xl font-black">{user.name}</h2>
-                <button onClick={() => setUser(null)} className="text-rose-500 font-bold">Logout</button>
+                <button onClick={() => setUser(null)} className="text-rose-500 font-bold hover:underline">Logout</button>
               </div>
             ) : (
-              <button onClick={() => setShowLoginModal(true)} className="w-full bg-indigo-600 text-white py-4 rounded-2xl font-black">LOGIN</button>
+              <button onClick={() => setShowLoginModal(true)} className="w-full bg-indigo-600 text-white py-4 rounded-2xl font-black shadow-lg">LOGIN</button>
             )}
           </div>
         )}
       </main>
 
-      <nav className={`fixed bottom-0 left-0 right-0 z-[100] h-16 border-t backdrop-blur-xl flex items-center justify-around md:hidden ${theme === Theme.Dark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
-        <button onClick={() => setActiveTab(AppTab.Library)} className={activeTab === AppTab.Library ? 'text-indigo-600' : 'opacity-40'}><Music /></button>
-        <button onClick={() => setActiveTab(AppTab.Study)} className={activeTab === AppTab.Study ? 'text-indigo-600' : 'opacity-40'}><BookOpen /></button>
-        <button onClick={() => setActiveTab(AppTab.Reflections)} className={activeTab === AppTab.Reflections ? 'text-indigo-600' : 'opacity-40'}><Heart /></button>
-        <button onClick={() => setActiveTab(AppTab.Profile)} className={activeTab === AppTab.Profile ? 'text-indigo-600' : 'opacity-40'}><User /></button>
+      {/* Bottom Nav - Mobile version uses structured tabs with labels */}
+      <nav className={`fixed bottom-0 left-0 right-0 z-[100] pb-safe border-t backdrop-blur-xl transition-all md:hidden ${theme === Theme.Dark ? 'bg-slate-900/95 border-slate-800' : 'bg-white/95 border-slate-100 shadow-[0_-10px_40px_rgba(0,0,0,0.05)]'}`}>
+        <div className="max-w-md mx-auto flex items-center h-16">
+           {mobileNavigationTabs}
+        </div>
       </nav>
 
       {showLoginModal && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 p-6">
-          <div className="bg-white p-8 rounded-3xl w-full max-w-sm space-y-4">
-            <h2 className="text-xl font-bold">Login</h2>
-            <input type="text" placeholder="Name" className="w-full p-4 border rounded-xl" onChange={e => setLoginForm({...loginForm, name: e.target.value})} />
-            <input type="email" placeholder="Email" className="w-full p-4 border rounded-xl" onChange={e => setLoginForm({...loginForm, email: e.target.value})} />
-            <button onClick={handleGoogleLoginSubmit} className="w-full bg-indigo-600 text-white py-4 rounded-xl font-bold">Sign In</button>
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 backdrop-blur-sm p-6">
+          <div className="bg-white p-8 rounded-3xl w-full max-w-sm space-y-4 animate-scaleUp">
+            <h2 className="text-xl font-bold text-slate-900">Login</h2>
+            <input type="text" placeholder="Name" className="w-full p-4 border rounded-xl bg-slate-50" onChange={e => setLoginForm({...loginForm, name: e.target.value})} />
+            <input type="email" placeholder="Email" className="w-full p-4 border rounded-xl bg-slate-50" onChange={e => setLoginForm({...loginForm, email: e.target.value})} />
+            <button onClick={handleGoogleLoginSubmit} className="w-full bg-indigo-600 text-white py-4 rounded-xl font-bold shadow-lg">Sign In</button>
+            <button onClick={() => setShowLoginModal(false)} className="w-full text-slate-400 py-2 font-bold text-sm">Cancel</button>
           </div>
         </div>
       )}
