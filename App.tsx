@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useEffect } from 'react';
 import { BIBLE_SONGS, PRE_CACHED_STUDIES } from './constants';
 import { Song, AppTab, UserProfile, SavedStudy, Theme } from './types';
@@ -123,10 +122,12 @@ const App: React.FC = () => {
     localStorage.setItem('sm_user', JSON.stringify(user));
     document.documentElement.className = theme;
     
-    // Check if API key exists on mount
-    if (!process.env.API_KEY) {
+    // Improved check for API key presence
+    const currentKey = process.env.API_KEY;
+    if (!currentKey || currentKey.length < 10) {
       setApiKeyMissing(true);
-      console.warn("API_KEY is missing from process.env");
+    } else {
+      setApiKeyMissing(false);
     }
   }, [favorites, savedStudies, theme, user]);
 
@@ -343,9 +344,9 @@ const App: React.FC = () => {
 
       {/* API Key Missing Alert */}
       {apiKeyMissing && (
-        <div className="fixed top-20 left-0 right-0 z-[90] px-6 py-2 bg-amber-500 text-white text-xs font-bold text-center flex items-center justify-center gap-2">
+        <div className="fixed top-16 left-0 right-0 z-[120] px-6 py-2 bg-rose-600 text-white text-[10px] font-black uppercase tracking-widest text-center flex items-center justify-center gap-2 shadow-lg">
           <ShieldAlert className="w-4 h-4" />
-          API Key (API_KEY) খুঁজে পাওয়া যায়নি। সার্চ কাজ করবে না।
+          API Key (API_KEY) খুঁজে পাওয়া যায়নি। আপনার সেটিংস যাচাই করুন।
         </div>
       )}
 
