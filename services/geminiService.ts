@@ -1,11 +1,12 @@
 import { GoogleGenAI, Modality, Type } from "@google/genai";
 
 /**
- * গান বা কবিতার আধ্যাত্মিক ব্যাখ্যা তৈরি করে (Gemini 3 Flash)।
+ * আধ্যাত্মিক ব্যাখ্যা তৈরি করে
  */
 export const generateReflection = async (songTitle: string, lyrics: string[]) => {
-  const apiKey = process.env.API_KEY;
-  if (!apiKey) return "API Key পাওয়া যায়নি।";
+  const rawKey = process.env.API_KEY;
+  if (!rawKey) return "API Key পাওয়া যায়নি।";
+  const apiKey = rawKey.trim();
 
   try {
     const ai = new GoogleGenAI({ apiKey });
@@ -20,80 +21,55 @@ export const generateReflection = async (songTitle: string, lyrics: string[]) =>
     return response.text;
   } catch (error) {
     console.error("Reflection Error:", error);
-    return "দুঃখিত, এই মুহূর্তে ব্যাখ্যা তৈরি করা সম্ভব হচ্ছে না। আপনার API Key সঠিক আছে কি না তা যাচাই করুন।";
+    return "দুঃখিত, এই মুহূর্তে ব্যাখ্যা তৈরি করা সম্ভব হচ্ছে না।";
   }
 };
 
 /**
- * গুগল সার্চ ব্যবহার করে বাইবেলের পদের ব্যাখ্যা দেয় (Gemini 3 Flash)।
+ * বাইবেলের পদের ব্যাখ্যা দেয়
  */
 export const explainVerseStream = async (verseReference: string, onChunk: (text: string, sources?: any[]) => void) => {
-  const apiKey = process.env.API_KEY;
-  if (!apiKey) throw new Error("API Key খুঁজে পাওয়া যায়নি।");
+  const rawKey = process.env.API_KEY;
+  if (!rawKey) throw new Error("API Key খুঁজে পাওয়া যায়নি।");
+  const apiKey = rawKey.trim();
 
   try {
     const ai = new GoogleGenAI({ apiKey });
     const prompt = `Please search for and provide a comprehensive explanation for the Bible verse: "${verseReference}". 
-    MANDATORY: You must search the web to find the EXACT text of this verse in Bengali.
-    
-    Structure your response accurately in Bengali using these markers:
-    [[VERSE]]
-    (The full verse text in Bengali)
-    
-    [[CONTEXT]]
-    (The historical and biblical context)
-    
-    [[MEANING]]
-    (The spiritual meaning)
-    
-    [[APPLICATION]]
-    (Practical life application)
-    
-    [[PRAYER]]
-    (A short prayer)
-
-    Use ONLY Bengali for all sections.`;
+    Structure your response accurately in Bengali using these markers: [[VERSE]], [[CONTEXT]], [[MEANING]], [[APPLICATION]], [[PRAYER]].`;
     
     const response = await ai.models.generateContentStream({
       model: 'gemini-3-flash-preview',
       contents: [{ role: 'user', parts: [{ text: prompt }] }],
       config: {
-        systemInstruction: "You are an expert Bible Scholar. Always use the googleSearch tool to find accurate verse wording. Your response MUST be in Bengali.",
+        systemInstruction: "You are an expert Bible Scholar. Your response MUST be in Bengali.",
         tools: [{ googleSearch: {} }],
         temperature: 0.2,
       }
     });
 
     let fullText = '';
-    let allSources: any[] = [];
-
     for await (const chunk of response) {
       if (chunk.text) {
         fullText += chunk.text;
         const sources = chunk.candidates?.[0]?.groundingMetadata?.groundingChunks;
-        if (sources) {
-          sources.forEach(s => {
-            if (s.web && !allSources.some(existing => existing.web?.uri === s.web.uri)) {
-              allSources.push(s);
-            }
-          });
-        }
-        onChunk(fullText, allSources.length > 0 ? allSources : undefined);
+        onChunk(fullText, sources);
       }
     }
     return fullText;
   } catch (error) {
-    console.error("Explanation Stream Error:", error);
+    console.error("Explanation Error:", error);
     throw error;
   }
 };
 
 /**
- * এআই ব্যবহার করে গানের লিরিক্স খুঁজে বের করে (Gemini 3 Flash)।
+ * লিরিক্স খুঁজে বের করে
  */
 export const fetchSongFromAI = async (query: string) => {
-  const apiKey = process.env.API_KEY;
-  if (!apiKey) return null;
+  const rawKey = process.env.API_KEY;
+  if (!rawKey) return null;
+  const apiKey = rawKey.trim();
 
   try {
     const ai = new GoogleGenAI({ apiKey });
@@ -114,8 +90,7 @@ export const fetchSongFromAI = async (query: string) => {
         }
       }
     });
-    const text = response.text?.trim() || '{}';
-    return JSON.parse(text);
+    return JSON.parse(response.text || '{}');
   } catch (error) {
     console.error("Fetch Song Error:", error);
     return null;
@@ -123,11 +98,12 @@ export const fetchSongFromAI = async (query: string) => {
 };
 
 /**
- * লিরিক্স পাঠ করে শোনায় (Gemini TTS)।
+ * লিরিক্স পাঠ করে শোনায়
  */
 export const speakLyrics = async (text: string) => {
-  const apiKey = process.env.API_KEY;
-  if (!apiKey) return null;
+  const rawKey = process.env.API_KEY;
+  if (!rawKey) return null;
+  const apiKey = rawKey.trim();
 
   try {
     const ai = new GoogleGenAI({ apiKey });
@@ -150,12 +126,10 @@ export const speakLyrics = async (text: string) => {
   }
 };
 
-// Audio Decoding Utilities
 export function decode(base64: string) {
   const binaryString = atob(base64);
-  const len = binaryString.length;
-  const bytes = new Uint8Array(len);
-  for (let i = 0; i < len; i++) {
+  const bytes = new Uint8Array(binaryString.length);
+  for (let i = 0; i < binaryString.length; i++) {
     bytes[i] = binaryString.charCodeAt(i);
   }
   return bytes;
