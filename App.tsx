@@ -1,30 +1,43 @@
 
-import React, { useState, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { BIBLE_SONGS, PRE_CACHED_STUDIES } from './constants';
 import { Song, AppTab, UserProfile, SavedStudy, Theme } from './types';
 import SongCard from './components/SongCard';
 import Reader from './components/Reader';
 import { 
-  Music, Search, Heart, User, Sparkles, Loader2, BookOpen, LogOut, 
-  Facebook, Share2, Check, Bookmark, Trash2, 
-  ChevronLeft, ChevronRight, CloudOff, X, Moon, Sun, Coffee, 
-  Code2, Globe, Mail, LogIn, Chrome, UserCircle, Zap, PhoneCall, 
+  Music, Search, Heart, User, Sparkles, Loader2, BookOpen, 
+  Share2, Check, Bookmark, Trash2, 
+  Moon, Sun, LogIn, UserCircle, 
   ExternalLink, Quote, ScrollText, Gem, Sprout, HandHelping,
-  MessageSquare, Send, Database, History, Maximize2, Eraser,
-  AlertCircle
+  AlertCircle, Globe
 } from 'lucide-react';
 import { fetchSongFromAI, explainVerseStream } from './services/geminiService';
 
-const NavButton: React.FC<{ active: boolean; onClick: () => void; icon: React.ReactNode; label: string; activeTheme: Theme }> = ({ active, onClick, icon, label, activeTheme }) => (
-  <button onClick={onClick} className={`flex flex-col items-center justify-center gap-1 flex-1 py-1 transition-all duration-300 ${active ? 'scale-105' : 'opacity-50'}`}>
-     <div className={`p-2 rounded-xl transition-all ${active ? 'bg-indigo-600 text-white shadow-lg' : (activeTheme === Theme.Dark ? 'text-slate-400' : 'text-slate-600')}`}>
-        {React.isValidElement(icon) ? React.cloneElement(icon as React.ReactElement<any>, { className: 'w-5 h-5' }) : icon}
-     </div>
-     <span className={`text-[9px] font-black uppercase tracking-wider ${active ? (activeTheme === Theme.Dark ? 'text-white' : 'text-indigo-600') : (activeTheme === Theme.Dark ? 'text-slate-400' : 'text-slate-500')}`}>
-       {label}
-     </span>
-  </button>
-);
+const NavButton: React.FC<{ active: boolean; onClick: () => void; icon: React.ReactNode; label: string; activeTheme: Theme; mobile?: boolean }> = ({ active, onClick, icon, label, activeTheme, mobile }) => {
+  if (mobile) {
+    return (
+      <button onClick={onClick} className={`flex flex-col items-center justify-center gap-1 flex-1 py-1 transition-all duration-300 ${active ? 'scale-105' : 'opacity-50'}`}>
+        <div className={`p-2 rounded-xl transition-all ${active ? 'bg-indigo-600 text-white shadow-lg' : (activeTheme === Theme.Dark ? 'text-slate-400' : 'text-slate-600')}`}>
+          {React.isValidElement(icon) ? React.cloneElement(icon as React.ReactElement<any>, { className: 'w-5 h-5' }) : icon}
+        </div>
+        <span className={`text-[9px] font-black uppercase tracking-wider ${active ? (activeTheme === Theme.Dark ? 'text-white' : 'text-indigo-600') : (activeTheme === Theme.Dark ? 'text-slate-400' : 'text-slate-500')}`}>
+          {label}
+        </span>
+      </button>
+    );
+  }
+
+  return (
+    <button onClick={onClick} className={`flex items-center gap-2 px-3 py-2 rounded-xl transition-all duration-300 ${active ? 'bg-indigo-600/10 scale-105' : 'opacity-60 hover:opacity-100 hover:bg-slate-100 dark:hover:bg-slate-800'}`}>
+      <div className={`transition-all ${active ? 'text-indigo-600' : (activeTheme === Theme.Dark ? 'text-slate-400' : 'text-slate-600')}`}>
+        {React.isValidElement(icon) ? React.cloneElement(icon as React.ReactElement<any>, { className: 'w-4 h-4' }) : icon}
+      </div>
+      <span className={`text-[10px] font-black uppercase tracking-wider ${active ? 'text-indigo-600' : (activeTheme === Theme.Dark ? 'text-slate-400' : 'text-slate-500')}`}>
+        {label}
+      </span>
+    </button>
+  );
+};
 
 const SplashScreen: React.FC<{ onFinish: () => void }> = ({ onFinish }) => {
   useEffect(() => {
@@ -164,7 +177,6 @@ const App: React.FC = () => {
       await explainVerseStream(query, (chunk, sources) => {
         if (!firstChunkReceived && chunk.trim().length > 0) {
           firstChunkReceived = true;
-          // Don't stop loader until we have some meat, or until it's finished
         }
         setVerseExplanation(chunk);
         if (sources) setGroundingSources(sources);
@@ -258,7 +270,11 @@ const App: React.FC = () => {
         })}
         {groundingSources.length > 0 && (
           <div className="pt-6 border-t border-slate-100 dark:border-slate-800 space-y-4">
-             <div className="flex items-center gap-2 opacity-40"><Globe className="w-4 h-4" /><span className="text-[10px] font-black uppercase tracking-widest">Sources</span></div>
+             <div className="flex items-center gap-2 opacity-40">
+               {/* Fixed missing Globe import by importing it from lucide-react */}
+               <Globe className="w-4 h-4" />
+               <span className="text-[10px] font-black uppercase tracking-widest">Sources</span>
+             </div>
              <div className="flex flex-wrap gap-2">
                 {groundingSources.map((src, i) => src.web && (
                   <a key={i} href={src.web.uri} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-3 py-1 bg-indigo-50 dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 rounded-full text-[10px] font-bold border border-indigo-100 dark:border-indigo-900/40">
@@ -286,10 +302,28 @@ const App: React.FC = () => {
     );
   }
 
+  const navigationTabs = (
+    <>
+      <NavButton active={activeTab === AppTab.Library} onClick={() => setActiveTab(AppTab.Library)} icon={<Music />} label="Library" activeTheme={theme} />
+      <NavButton active={activeTab === AppTab.Study} onClick={() => setActiveTab(AppTab.Study)} icon={<BookOpen />} label="Study" activeTheme={theme} />
+      <NavButton active={activeTab === AppTab.Reflections} onClick={() => setActiveTab(AppTab.Reflections)} icon={<Heart />} label="Saved" activeTheme={theme} />
+      <NavButton active={activeTab === AppTab.Profile} onClick={() => setActiveTab(AppTab.Profile)} icon={<UserCircle />} label="Me" activeTheme={theme} />
+    </>
+  );
+
+  const mobileNavigationTabs = (
+    <>
+      <NavButton active={activeTab === AppTab.Library} onClick={() => setActiveTab(AppTab.Library)} icon={<Music />} label="Library" activeTheme={theme} mobile />
+      <NavButton active={activeTab === AppTab.Study} onClick={() => setActiveTab(AppTab.Study)} icon={<BookOpen />} label="Study" activeTheme={theme} mobile />
+      <NavButton active={activeTab === AppTab.Reflections} onClick={() => setActiveTab(AppTab.Reflections)} icon={<Heart />} label="Saved" activeTheme={theme} mobile />
+      <NavButton active={activeTab === AppTab.Profile} onClick={() => setActiveTab(AppTab.Profile)} icon={<UserCircle />} label="Me" activeTheme={theme} mobile />
+    </>
+  );
+
   return (
     <div className={`min-h-screen flex flex-col transition-colors duration-500 animate-fadeIn ${themeClasses}`}>
       {toast && (
-        <div className={`fixed top-20 left-1/2 -translate-x-1/2 z-[100] px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-3 animate-slideUp font-bold text-sm border ${toast.type === 'success' ? 'bg-emerald-500 text-white border-emerald-400' : 'bg-rose-500 text-white border-rose-400'}`}>
+        <div className={`fixed top-24 md:top-28 left-1/2 -translate-x-1/2 z-[150] px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-3 animate-slideUp font-bold text-sm border ${toast.type === 'success' ? 'bg-emerald-500 text-white border-emerald-400' : 'bg-rose-500 text-white border-rose-400'}`}>
           {toast.type === 'success' ? <Check className="w-5 h-5" /> : <AlertCircle className="w-5 h-5" />}
           {toast.message}
         </div>
@@ -314,17 +348,29 @@ const App: React.FC = () => {
         </div>
       )}
 
-      <header className={`fixed top-0 left-0 right-0 z-50 h-16 border-b backdrop-blur-xl ${theme === Theme.Dark ? 'bg-slate-900/80 border-slate-800' : 'bg-white/80 border-slate-200 shadow-sm'}`}>
-        <div className="max-w-6xl mx-auto px-6 h-full flex items-center justify-between">
-           <h1 className="text-lg font-black tracking-tighter">Sacred Melodies</h1>
+      {/* HEADER: Brand and Desktop Menu */}
+      <header className={`fixed top-0 left-0 right-0 z-[100] border-b backdrop-blur-xl transition-all duration-300 ${theme === Theme.Dark ? 'bg-slate-900/90 border-slate-800' : 'bg-white/90 border-slate-200 shadow-sm'}`}>
+        <div className="max-w-6xl mx-auto px-6 h-16 md:h-20 flex items-center justify-between">
+           <div className="flex items-center gap-3">
+             <div className="p-1.5 bg-indigo-600 rounded-lg shadow-lg text-white">
+               <Music className="w-4 h-4" />
+             </div>
+             <h1 className="text-lg font-black tracking-tighter">Sacred Melodies</h1>
+           </div>
+
+           {/* DESKTOP MENU: Aligned with the theme buttons */}
+           <div className="hidden md:flex items-center gap-2 mx-auto">
+              {navigationTabs}
+           </div>
+
            <div className="flex items-center gap-2">
               <button onClick={() => setTheme(theme === Theme.Dark ? Theme.Light : Theme.Dark)} className={`p-2 rounded-xl border transition-all ${cardBgClasses}`}>{theme === Theme.Dark ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-indigo-600" />}</button>
-              <button onClick={() => setActiveTab(AppTab.Profile)} className={`w-8 h-8 rounded-full border overflow-hidden p-0.5 ${cardBgClasses}`}>{user ? <img src={user.photo} className="w-full h-full object-cover rounded-full" /> : <UserCircle className="w-5 h-5 m-auto opacity-30" />}</button>
+              <button onClick={() => setActiveTab(AppTab.Profile)} className={`w-8 h-8 rounded-full border overflow-hidden p-0.5 transition-transform active:scale-90 ${cardBgClasses}`}>{user ? <img src={user.photo} className="w-full h-full object-cover rounded-full" /> : <UserCircle className="w-5 h-5 m-auto opacity-30" />}</button>
            </div>
         </div>
       </header>
 
-      <main className="flex-1 w-full max-w-6xl mx-auto px-6 pt-20 pb-28">
+      <main className="flex-1 w-full max-w-6xl mx-auto px-6 pt-24 md:pt-32 pb-24 md:pb-12">
         <div className="page-transition">
           {activeTab === AppTab.Library && (
             <div className="space-y-8">
@@ -414,13 +460,13 @@ const App: React.FC = () => {
              <div className="max-w-md mx-auto py-8 text-center space-y-10">
                 {user ? (
                    <div className="space-y-6">
-                      <div className="w-32 h-32 rounded-[2.5rem] border-4 border-indigo-600 shadow-xl overflow-hidden mx-auto p-1"><img src={user.photo} className="w-full h-full object-cover rounded-[2rem]" /></div>
+                      <div className="w-32 h-32 rounded-[2.5rem] border-4 border-indigo-600 shadow-xl overflow-hidden mx-auto p-1 transition-transform hover:scale-105"><img src={user.photo} className="w-full h-full object-cover rounded-[2rem]" /></div>
                       <div><h2 className="text-3xl font-black">{user.name}</h2><p className="opacity-50 text-xs mt-1">{user.email}</p></div>
                       <button onClick={() => { setUser(null); showToast("Signed out."); }} className="bg-rose-50 text-rose-600 px-8 py-4 rounded-2xl font-black text-xs uppercase hover:bg-rose-100">SIGN OUT</button>
                    </div>
                 ) : (
                   <div className="space-y-6">
-                    <div className="w-20 h-20 bg-indigo-600 rounded-[2rem] flex items-center justify-center mx-auto text-white shadow-xl"><User className="w-10 h-10" /></div>
+                    <div className="w-20 h-20 bg-indigo-600 rounded-[2rem] flex items-center justify-center mx-auto text-white shadow-xl"><UserCircle className="w-10 h-10" /></div>
                     <h2 className="text-3xl font-black tracking-tight">Account</h2>
                     <button onClick={() => setShowLoginModal(true)} className="w-full bg-indigo-600 text-white py-4 rounded-2xl font-black shadow-lg">LOG IN NOW</button>
                   </div>
@@ -430,13 +476,10 @@ const App: React.FC = () => {
         </div>
       </main>
 
-      {/* FIXED BOTTOM NAVIGATION */}
-      <nav className={`fixed bottom-0 left-0 right-0 z-[100] px-4 pb-safe border-t backdrop-blur-xl transition-all ${theme === Theme.Dark ? 'bg-slate-900/95 border-slate-800 shadow-none' : 'bg-white/95 border-slate-100 shadow-[0_-10px_40px_rgba(0,0,0,0.05)]'}`}>
-        <div className="max-w-md mx-auto flex items-center h-16 sm:h-20">
-           <NavButton active={activeTab === AppTab.Library} onClick={() => setActiveTab(AppTab.Library)} icon={<Music />} label="Library" activeTheme={theme} />
-           <NavButton active={activeTab === AppTab.Study} onClick={() => setActiveTab(AppTab.Study)} icon={<BookOpen />} label="Study" activeTheme={theme} />
-           <NavButton active={activeTab === AppTab.Reflections} onClick={() => setActiveTab(AppTab.Reflections)} icon={<Heart />} label="Saved" activeTheme={theme} />
-           <NavButton active={activeTab === AppTab.Profile} onClick={() => setActiveTab(AppTab.Profile)} icon={<UserCircle />} label="Me" activeTheme={theme} />
+      {/* MOBILE BOTTOM NAVIGATION: Visible only on small screens */}
+      <nav className={`fixed bottom-0 left-0 right-0 z-[100] px-4 pb-safe border-t backdrop-blur-xl transition-all md:hidden ${theme === Theme.Dark ? 'bg-slate-900/95 border-slate-800' : 'bg-white/95 border-slate-100 shadow-[0_-10px_40px_rgba(0,0,0,0.05)]'}`}>
+        <div className="max-w-md mx-auto flex items-center h-16">
+           {mobileNavigationTabs}
         </div>
       </nav>
     </div>
